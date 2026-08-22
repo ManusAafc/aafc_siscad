@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect width="1024" height="1024" fill="#1976D2"/>
+  <text x="512" y="400" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="120" font-weight="bold">AAFC</text>
+  <text x="512" y="550" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="60">SISCAD</text>
+  <circle cx="512" cy="700" r="80" fill="none" stroke="white" stroke-width="8"/>
+  <path d="M480 700 L500 720 L545 675" fill="none" stroke="white" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
