@@ -16,11 +16,11 @@ export const usersApi = {
   },
 
   /**
-   * Busca usuários vinculados a um perfil
+   * Busca usuários vinculados a um perfil com paginação
    */
-  async getByProfile(profileId: number): Promise<IUser[]> {
+  async getByProfile(profileId: number, page = 0, limit = 50): Promise<IUser[]> {
     const response = await apiClient.get(
-      `/users?profile_id=eq.${profileId}&select=*&order=name_full.asc`
+      `/users?profile_id=eq.${profileId}&select=*&order=name_full.asc&limit=${limit}&offset=${page * limit}`
     );
     return response.data || [];
   },

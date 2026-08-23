@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Shield,
   Plus,
@@ -130,13 +130,50 @@ export const ProfilesPage: React.FC = () => {
   }, [selected]);
 
   // ── Carregar usuários do perfil selecionado ────────────────────────────────
-  useEffect(() => {
+  const [userPage, setUserPage] = useState(0);
+  const [hasMoreUsers, setHasMoreUsers] = useState(true);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const loadUsers = useCallback(async (page: number, append = false) => {
     if (!selected?.id) {
-      setUsers([]);
+      if (!append) setUsers([]);
       return;
     }
-    usersApi.getByProfile(selected.id).then(setUsers);
+    try {
+      const data = await usersApi.getByProfile(selected.id, page);
+      if (append) {
+        setUsers((prev) => [...prev, ...data]);
+      } else {
+        setUsers(data);
+      }
+      setHasMoreUsers(data.length === 50);
+    } catch {
+      showToast('Erro ao carregar usuários.', 'error');
+    }
   }, [selected]);
+
+  useEffect(() => {
+    setUserPage(0);
+    loadUsers(0, false);
+  }, [selected, loadUsers]);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    if (!hasMoreUsers) return;
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          const nextPage = userPage + 1;
+          setUserPage(nextPage);
+          loadUsers(nextPage, true);
+        }
+      },
+      { rootMargin: '100px' }
+    );
+    if (sentinelRef.current) observerRef.current.observe(sentinelRef.current);
+    return () => observerRef.current?.disconnect();
+  }, [hasMoreUsers, userPage, loadUsers]);
 
   const showToast = (msg: string, type: 'success' | 'error') => {
     setToast({ msg, type });
@@ -151,6 +188,7 @@ export const ProfilesPage: React.FC = () => {
   };
 
   const openEdit = (profile: IProfile) => {
+    setSelected(profile);
     setEditingId(profile.id ?? null);
     setFormData({ name: profile.name, description: profile.description ?? '', is_active: profile.is_active ?? true });
     setShowForm(true);
@@ -168,6 +206,7 @@ export const ProfilesPage: React.FC = () => {
       } else {
         const created = await profilesApi.create(formData);
         setProfiles((p) => [...p, created]);
+        setSelected(created);
         showToast('Perfil criado!', 'success');
       }
       setShowForm(false);
@@ -311,6 +350,9 @@ export const ProfilesPage: React.FC = () => {
                 style={{
                   ...s.profileCard,
                   ...(selected?.id === profile.id ? s.profileCardActive : {}),
+                  borderColor: selected?.id === profile.id ? 'hsl(var(--primary))' : 'hsl(var(--border))',
+                  backgroundColor: selected?.id === profile.id ? 'hsla(var(--primary), 0.04)' : 'hsl(var(--card))',
+                  boxShadow: selected?.id === profile.id ? '0 0 0 2px hsla(var(--primary), 0.15)' : 'var(--shadow-sm)',
                 }}
                 onClick={() => setSelected(profile)}
               >
@@ -464,7 +506,7 @@ export const ProfilesPage: React.FC = () => {
               </div>
 
               {/* Usuários do perfil — abaixo da tabela de permissões */}
-              <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid hsl(var(--border))' }}>
+              <div style={{ padding: '0.75rem 1rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                   <h4 style={{ fontWeight: 600, fontSize: '0.9rem' }}>
                     Usuários deste perfil ({users.length})
@@ -511,6 +553,11 @@ export const ProfilesPage: React.FC = () => {
                         </div>
                       </div>
                     ))}
+                    {hasMoreUsers && (
+                      <div ref={sentinelRef} style={{ height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'hsl(var(--muted-foreground))', fontSize: '0.75rem' }}>
+                        <RefreshCw size={14} className="spinner" style={{ color: 'hsl(var(--primary))' }} />
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -735,9 +782,7 @@ const s: Record<string, React.CSSProperties> = {
     display: 'flex',
     flexDirection: 'column',
     gap: '0.5rem',
-    maxHeight: '200px',
-    overflowY: 'auto',
-    paddingRight: '0.5rem',
+    padding: '0.75rem 1rem',
   },
   userItem: {
     display: 'flex',

@@ -12,7 +12,6 @@ import {
   Church, 
   Phone, 
   Mail, 
-  MessageCircle, 
   MapPin, 
   ShieldAlert,
   Users,
@@ -138,6 +137,40 @@ export const MemberShow: React.FC = () => {
               );
             })()}
           </div>
+          
+          {/* Additional info row */}
+          <div style={styles.additionalInfoRow}>
+            {(() => {
+              const startDate = member.dateAafcStart || member.dateAafcStartDatetime;
+              if (startDate) {
+                const formatted = startDate.split('T')[0].split('-').reverse().join('/');
+                return (
+                  <span style={styles.badgeSecondary}>
+                    Início AAFC: {formatted}
+                  </span>
+                );
+              }
+              return (
+                <span style={styles.badgeSecondary}>Início AAFC: Não informado</span>
+              );
+            })()}
+            {(() => {
+              const statusId = Number(member.statusId ?? member.status ?? 0);
+              const isInactive = statusId === 1;
+              if (isInactive) {
+                const endDate = member.dateAafcEnd || member.dateAafcEndDatetime;
+                const motivo = member.statusReasonDescription || member.statusReasonCode;
+                const formattedEnd = endDate ? endDate.split('T')[0].split('-').reverse().join('/') : 'Não informado';
+                const motivoText = motivo || 'Não informado';
+                return (
+                  <span style={{ ...styles.badge, backgroundColor: '#fee2e2', color: '#dc2626' }}>
+                    Desligamento: {formattedEnd} | Motivo: {motivoText}
+                  </span>
+                );
+              }
+              return null;
+            })()}
+          </div>
         </div>
       </div>
 
@@ -211,26 +244,6 @@ export const MemberShow: React.FC = () => {
               </span>
             </div>
           </div>
-
-          <div style={styles.infoRow}>
-            <MessageCircle size={18} style={styles.infoIcon} />
-            <div style={styles.infoContent}>
-              <span style={styles.infoLabel}>WhatsApp</span>
-              <span style={styles.infoValue}>
-                {member.whatsappId || member.whatsapp || 'Não informado'}
-              </span>
-            </div>
-          </div>
-
-          {(member.mobile || member.phone) && (
-            <button 
-              onClick={handleSendWhatsApp} 
-              style={styles.whatsappBtn}
-            >
-              <MessageCircle size={18} />
-              <span>Enviar Mensagem WhatsApp</span>
-            </button>
-          )}
         </div>
 
         {/* Address */}
@@ -264,8 +277,8 @@ export const MemberShow: React.FC = () => {
               <span style={styles.infoValue}>
                 {(member.cityName || member.cityDescription || '') + 
                  ((member.cityName || member.cityDescription) && 
-                  (member.stateDescription || member.stateCode) ? ' / ' : '') + 
-                  (member.stateDescription || member.stateCode || '') 
+                  (member.stateCode || member.stateDescription) ? ' / ' : '') + 
+                  (member.stateCode || member.stateDescription || '') 
                   || 'Não informado'}
               </span>
             </div>
@@ -357,6 +370,12 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     backgroundColor: 'hsl(var(--secondary))',
     color: 'hsl(var(--secondary-foreground))',
+  },
+  additionalInfoRow: {
+    display: 'flex',
+    gap: '0.5rem',
+    flexWrap: 'wrap',
+    marginTop: '0.5rem',
   },
   detailsGrid: {
     display: 'grid',

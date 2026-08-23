@@ -1,28 +1,13 @@
 import React from 'react';
 import { Header } from './Header';
 
-interface PageContainerProps {
-  children: React.ReactNode;
-  header?: {
-    onBack?: () => void;
-    showBack?: boolean;
-  };
-  className?: string;
-}
-
-export const PageContainer: React.FC<PageContainerProps> = ({
+export const PageContainer: React.FC<{ children: React.ReactNode; className?: string }> = ({
   children,
-  header,
   className = '',
 }) => {
   return (
     <div className={`page-container ${className}`}>
-      {header && (
-        <Header
-          onBack={header.onBack}
-          showBack={header.showBack ?? !!header.onBack}
-        />
-      )}
+      <Header />
       <main style={styles.content}>
         {children}
       </main>

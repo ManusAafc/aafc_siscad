@@ -54,18 +54,44 @@ export const permissionsApi = {
     const response = await apiClient.get(
       `/permissions?profile_id=eq.${profileId}&select=*&order=module.asc`
     );
-    return response.data || [];
+    const data = response.data || [];
+    // Converter camelCase (vindo do interceptor) para snake_case (interface)
+    return data.map((p: any) => ({
+      id: p.id,
+      profile_id: p.profileId,
+      module: p.module,
+      can_view: p.canView,
+      can_create: p.canCreate,
+      can_edit: p.canEdit,
+      can_delete: p.canDelete,
+      can_export: p.canExport,
+    }));
   },
 
   async upsert(permissions: IPermission[]): Promise<IPermission[]> {
     if (permissions.length === 0) return [];
     const profileId = permissions[0].profile_id;
     await apiClient.delete(`/permissions?profile_id=eq.${profileId}`);
-    const clean = permissions.map(({ id, ...rest }) => rest);
-    const response = await apiClient.post('/permissions', clean, {
-      headers: { Prefer: 'return=representation' },
+    const clean = permissions.map((p) => {
+      const obj = {
+        profile_id: Number(p.profile_id),
+        module: String(p.module),
+        can_view: Boolean(p.can_view),
+        can_create: Boolean(p.can_create),
+        can_edit: Boolean(p.can_edit),
+        can_delete: Boolean(p.can_delete),
+        can_export: Boolean(p.can_export ?? false),
+      };
+      return obj;
     });
-    return response.data || [];
+    try {
+      const response = await apiClient.post('/permissions', clean, {
+        headers: { Prefer: 'return=representation' },
+      });
+      return response.data || [];
+    } catch (error: any) {
+      throw error;
+    }
   },
 
   async deleteByProfile(profileId: number): Promise<void> {
