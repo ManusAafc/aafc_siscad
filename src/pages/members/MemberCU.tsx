@@ -10,6 +10,23 @@ import { cityService } from '../../services/cityService';
 import { ArrowLeft, Save, UserPlus } from 'lucide-react';
 import { formatCEP, formatMobile, formatCPF } from '../../utils/formatters';
 
+function isoToDateInput(iso: string | undefined): string {
+  if (!iso) return '';
+  return iso.split('T')[0];
+}
+
+function dateInputToIso(dateStr: string): string {
+  if (!dateStr) return '';
+  return `${dateStr}T00:00:00`;
+}
+
+function toDisplayDate(iso: string | undefined): string {
+  if (!iso) return '';
+  const parts = iso.split('T')[0].split('-');
+  if (parts.length !== 3) return '';
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
 export const MemberCU: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -27,7 +44,10 @@ export const MemberCU: React.FC = () => {
     zipCode: '',
     cityId: undefined,
     planId: undefined,
-    status: 1,
+    status: undefined,
+    dateAafcStart: '',
+    dateAafcEnd: '',
+    statusReasonDescription: '',
   });
 
   const [plans, setPlans] = useState<IPlan[]>([]);
@@ -68,7 +88,6 @@ export const MemberCU: React.FC = () => {
           const birthDateFormatted = (member.birthday || member.birthDate || '').split('T')[0];
           
           const statusId = member.statusId ?? member.status ?? 1;
-          console.log('DEBUG final statusId being set:', statusId, 'member:', member);
           
           setFormData({
             name: member.name || '',
@@ -83,6 +102,9 @@ export const MemberCU: React.FC = () => {
             cityId: member.cityId,
             planId: member.planId,
             status: statusId,
+            dateAafcStart: isoToDateInput(member.dateAafcStart),
+            dateAafcEnd: isoToDateInput(member.dateAafcEnd),
+            statusReasonDescription: member.statusReasonDescription || '',
           });
         }
       }
@@ -102,6 +124,7 @@ export const MemberCU: React.FC = () => {
   };
 
   useEffect(() => {
+    loadData();
     loadAllCities();
   }, []);
 
@@ -138,6 +161,10 @@ export const MemberCU: React.FC = () => {
       newErrors.mobile = 'Telefone deve conter 10 ou 11 dígitos';
     }
 
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Email inválido';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -171,8 +198,13 @@ export const MemberCU: React.FC = () => {
       // CEP
       zip_code_mask: formData.zipCode,
       zip_code: zipNumbers || undefined,
+      // Datas
+      date_aafc_start: formData.dateAafcStart ? dateInputToIso(formData.dateAafcStart) : undefined,
+      date_aafc_end: formData.dateAafcEnd ? dateInputToIso(formData.dateAafcEnd) : undefined,
       // Remove campos auxiliares do formulario
       zipCode: undefined,
+      dateAafcStart: undefined,
+      dateAafcEnd: undefined,
     };
 
     setIsSaving(true);
@@ -300,6 +332,7 @@ export const MemberCU: React.FC = () => {
               onChange={(e) => handleChange('email', e.target.value)}
               placeholder="nome@exemplo.com"
             />
+            {errors.email && <span style={styles.errorText}>{errors.email}</span>}
           </div>
         </div>
 
@@ -382,7 +415,7 @@ export const MemberCU: React.FC = () => {
             <select
               id="status"
               className="input-control"
-              value={formData.status || 1}
+              value={formData.status ?? ''}
               onChange={(e) => handleChange('status', Number(e.target.value))}
             >
               {statuses.map((s) => (
@@ -392,6 +425,44 @@ export const MemberCU: React.FC = () => {
               ))}
             </select>
           </div>
+
+          <div className="input-group">
+            <label className="input-label" htmlFor="dateAafcStart">Data Início</label>
+            <input
+              id="dateAafcStart"
+              type="date"
+              className="input-control"
+              value={formData.dateAafcStart || ''}
+              onChange={(e) => handleChange('dateAafcStart', e.target.value)}
+            />
+          </div>
+
+          {statuses.find((s) => s.id === formData.status)?.description?.toUpperCase().includes('INATIVO') && (
+            <>
+              <div className="input-group">
+                <label className="input-label" htmlFor="dateAafcEnd">Data Desligamento</label>
+                <input
+                  id="dateAafcEnd"
+                  type="date"
+                  className="input-control"
+                  value={formData.dateAafcEnd || ''}
+                  onChange={(e) => handleChange('dateAafcEnd', e.target.value)}
+                />
+              </div>
+
+              <div className="input-group">
+                <label className="input-label" htmlFor="statusReasonDescription">Motivo Desligamento</label>
+                <input
+                  id="statusReasonDescription"
+                  type="text"
+                  className="input-control"
+                  value={formData.statusReasonDescription || ''}
+                  onChange={(e) => handleChange('statusReasonDescription', e.target.value)}
+                  placeholder="Motivo do desligamento"
+                />
+              </div>
+            </>
+          )}
         </div>
 
         {/* Submit */}

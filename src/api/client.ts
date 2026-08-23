@@ -2,6 +2,17 @@ import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 import { supabase } from '../config/supabase';
 import { ENV } from '../config/environment';
 
+function snakeToCamel(obj: any): any {
+  if (Array.isArray(obj)) return obj.map(snakeToCamel);
+  if (obj === null || typeof obj !== 'object') return obj;
+  const result: Record<string, any> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const camelKey = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+    result[camelKey] = snakeToCamel(value);
+  }
+  return result;
+}
+
 const apiClient: AxiosInstance = axios.create({
   baseURL: `${ENV.SUPABASE_URL}/rest/v1`,
   headers: {
@@ -29,6 +40,9 @@ apiClient.interceptors.request.use(
 
 apiClient.interceptors.response.use(
   (response: AxiosResponse) => {
+    if (response.data && typeof response.data === 'object') {
+      response.data = snakeToCamel(response.data);
+    }
     return response;
   },
   (error: AxiosError) => {
