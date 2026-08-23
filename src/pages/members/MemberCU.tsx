@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { IMember, IPlan, ICity, IGender, IMemberStatus } from '../../models';
 import { memberService } from '../../services/memberService';
@@ -7,8 +7,34 @@ import { genderService } from '../../services/genderService';
 import { statusService } from '../../services/statusService';
 import { dispatchLoadingStart, dispatchLoadingEnd } from '../../components/common/ButtonLoading';
 import { cityService } from '../../services/cityService';
-import { ArrowLeft, Save, UserPlus } from 'lucide-react';
+import { ArrowLeft, Save, UserPlus, Calendar } from 'lucide-react';
 import { formatCEP, formatMobile, formatCPF } from '../../utils/formatters';
+
+function isValidDate(dd: string, mm: string, yyyy: string): boolean {
+  const day = parseInt(dd, 10);
+  const month = parseInt(mm, 10);
+  const year = parseInt(yyyy, 10);
+  if (year < 1900 || year > 2100) return false;
+  if (month < 1 || month > 12) return false;
+  const daysInMonth = new Date(year, month, 0).getDate();
+  return day >= 1 && day <= daysInMonth;
+}
+
+function formatDisplayDate(iso: string): string {
+  if (!iso) return '';
+  const parts = iso.split('T')[0].split('-');
+  if (parts.length !== 3) return '';
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
+function parseDisplayToIso(display: string): string {
+  if (!display) return '';
+  const match = display.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return '';
+  const [, dd, mm, yyyy] = match;
+  if (!isValidDate(dd, mm, yyyy)) return '';
+  return `${yyyy}-${mm}-${dd}T00:00:00`;
+}
 
 function isoToDateInput(iso: string | undefined): string {
   if (!iso) return '';
@@ -21,11 +47,97 @@ function dateInputToIso(dateStr: string): string {
 }
 
 function toDisplayDate(iso: string | undefined): string {
-  if (!iso) return '';
-  const parts = iso.split('T')[0].split('-');
-  if (parts.length !== 3) return '';
-  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  return formatDisplayDate(iso || '');
 }
+
+interface DateInputProps {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (isoValue: string) => void;
+}
+
+const DateInput: React.FC<DateInputProps> = ({ id, label, value, onChange }) => {
+  const hiddenRef = useRef<HTMLInputElement>(null);
+  const [displayValue, setDisplayValue] = useState('');
+
+  useEffect(() => {
+    setDisplayValue(formatDisplayDate(value));
+  }, [value]);
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let input = e.target.value.replace(/\D/g, '');
+    if (input.length > 8) input = input.substring(0, 8);
+
+    let formatted = input;
+    if (input.length > 4) {
+      formatted = `${input.substring(0, 2)}/${input.substring(2, 4)}/${input.substring(4)}`;
+    } else if (input.length > 2) {
+      formatted = `${input.substring(0, 2)}/${input.substring(2)}`;
+    }
+
+    setDisplayValue(formatted);
+
+    const clean = formatted.replace(/\D/g, '');
+    if (clean.length === 8) {
+      const dd = clean.substring(0, 2);
+      const mm = clean.substring(2, 4);
+      const yyyy = clean.substring(4, 8);
+      if (isValidDate(dd, mm, yyyy)) {
+        onChange(`${yyyy}-${mm}-${dd}T00:00:00`);
+      }
+    } else {
+      onChange('');
+    }
+  };
+
+  const handleCalendarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const iso = e.target.value ? `${e.target.value}T00:00:00` : '';
+    onChange(iso);
+  };
+
+  const openPicker = () => {
+    hiddenRef.current?.showPicker?.();
+  };
+
+  return (
+    <div className="input-group">
+      <label className="input-label" htmlFor={id}>{label}</label>
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+        <input
+          id={id}
+          type="text"
+          className="input-control"
+          value={displayValue}
+          onChange={handleTextChange}
+          placeholder="dd/mm/aaaa"
+          maxLength={10}
+          style={{ paddingRight: '2.5rem', flex: 1 }}
+        />
+        <span
+          onClick={openPicker}
+          style={{
+            position: 'absolute',
+            right: '0.5rem',
+            cursor: 'pointer',
+            color: 'hsl(var(--muted-foreground))',
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          <Calendar size={18} />
+        </span>
+        <input
+          ref={hiddenRef}
+          type="date"
+          value={value ? value.split('T')[0] : ''}
+          onChange={handleCalendarChange}
+          style={{ position: 'absolute', opacity: 0, width: 0, height: 0, pointerEvents: 'none' }}
+        />
+      </div>
+    </div>
+  );
+};
 
 export const MemberCU: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -249,7 +361,7 @@ export const MemberCU: React.FC = () => {
         {/* Pessoal */}
         <h3 style={styles.sectionTitle}>Informações Pessoais</h3>
         <div style={styles.formGrid}>
-          <div className="input-group" style={{ gridColumn: 'span 2' }}>
+          <div className="input-group">
             <label className="input-label" htmlFor="name">Nome Completo</label>
             <input
               id="name"
@@ -267,26 +379,24 @@ export const MemberCU: React.FC = () => {
             <label className="input-label" htmlFor="cpf">CPF</label>
             <input
               id="cpf"
-              type="text"
+              type="tel"
+              inputMode="numeric"
+              pattern="[0-9]*"
               className="input-control"
               value={formData.cpf || ''}
-              onChange={(e) => handleChange('cpf', e.target.value)}
-              placeholder="Apenas números (11 dígitos)"
+              onChange={(e) => handleChange('cpf', e.target.value.replace(/\D/g, ''))}
+              placeholder="000.000.000-00"
               maxLength={14}
             />
             {errors.cpf && <span style={styles.errorText}>{errors.cpf}</span>}
           </div>
 
-          <div className="input-group">
-            <label className="input-label" htmlFor="birthDate">Data de Nascimento</label>
-            <input
-              id="birthDate"
-              type="date"
-              className="input-control"
-              value={formData.birthDate || ''}
-              onChange={(e) => handleChange('birthDate', e.target.value)}
-            />
-          </div>
+          <DateInput
+            id="birthDate"
+            label="Data de Nascimento"
+            value={formData.birthDate || ''}
+            onChange={(v) => handleChange('birthDate', v)}
+          />
 
           <div className="input-group">
             <label className="input-label" htmlFor="gender">Gênero</label>
@@ -313,16 +423,18 @@ export const MemberCU: React.FC = () => {
             <label className="input-label" htmlFor="mobile">Celular</label>
             <input
               id="mobile"
-              type="text"
+              type="tel"
+              inputMode="numeric"
+              pattern="[0-9]*"
               className="input-control"
               value={formData.mobile || ''}
-              onChange={(e) => handleChange('mobile', e.target.value)}
+              onChange={(e) => handleChange('mobile', e.target.value.replace(/\D/g, ''))}
               placeholder="(00) 00000-0000"
             />
             {errors.mobile && <span style={styles.errorText}>{errors.mobile}</span>}
           </div>
 
-          <div className="input-group" style={{ gridColumn: 'span 2' }}>
+          <div className="input-group">
             <label className="input-label" htmlFor="email">Email</label>
             <input
               id="email"
@@ -339,7 +451,7 @@ export const MemberCU: React.FC = () => {
         {/* Endereço */}
         <h3 style={styles.sectionTitle}>Endereço</h3>
         <div style={styles.formGrid}>
-          <div className="input-group" style={{ gridColumn: 'span 2' }}>
+          <div className="input-group">
             <label className="input-label" htmlFor="address">Logradouro</label>
             <input
               id="address"
@@ -367,10 +479,12 @@ export const MemberCU: React.FC = () => {
             <label className="input-label" htmlFor="zipCode">CEP</label>
             <input
               id="zipCode"
-              type="text"
+              type="tel"
+              inputMode="numeric"
+              pattern="[0-9]*"
               className="input-control"
               value={formData.zipCode || ''}
-              onChange={(e) => handleChange('zipCode', e.target.value)}
+              onChange={(e) => handleChange('zipCode', e.target.value.replace(/\D/g, ''))}
               placeholder="00.000-000"
               maxLength={10}
             />
@@ -428,29 +542,21 @@ export const MemberCU: React.FC = () => {
             </select>
           </div>
 
-          <div className="input-group">
-            <label className="input-label" htmlFor="dateAafcStart">Data Início</label>
-            <input
-              id="dateAafcStart"
-              type="date"
-              className="input-control"
-              value={formData.dateAafcStart || ''}
-              onChange={(e) => handleChange('dateAafcStart', e.target.value)}
-            />
-          </div>
+          <DateInput
+            id="dateAafcStart"
+            label="Data Início"
+            value={formData.dateAafcStart || ''}
+            onChange={(v) => handleChange('dateAafcStart', v)}
+          />
 
           {statuses.find((s) => s.id === formData.status)?.description?.toUpperCase().includes('INATIVO') && (
             <>
-              <div className="input-group">
-                <label className="input-label" htmlFor="dateAafcEnd">Data Desligamento</label>
-                <input
-                  id="dateAafcEnd"
-                  type="date"
-                  className="input-control"
-                  value={formData.dateAafcEnd || ''}
-                  onChange={(e) => handleChange('dateAafcEnd', e.target.value)}
-                />
-              </div>
+              <DateInput
+                id="dateAafcEnd"
+                label="Data Desligamento"
+                value={formData.dateAafcEnd || ''}
+                onChange={(v) => handleChange('dateAafcEnd', v)}
+              />
 
               <div className="input-group">
                 <label className="input-label" htmlFor="statusReasonDescription">Motivo Desligamento</label>
@@ -542,8 +648,8 @@ const styles: Record<string, React.CSSProperties> = {
     color: 'hsl(var(--foreground))',
   },
   formGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+    display: 'flex',
+    flexDirection: 'column',
     gap: '1.25rem',
   },
   errorText: {

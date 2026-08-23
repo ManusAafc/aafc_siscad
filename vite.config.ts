@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react()],
   envPrefix: ['SUPABASE_', 'JS_REPORT_', 'N8N_', 'EVO_'],
   server: {
+    host: true,
     port: 3000,
     open: true,
   },

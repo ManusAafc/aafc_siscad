@@ -1,8 +1,9 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
-import { LogOut, ChevronLeft, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { LogOut, ChevronLeft } from 'lucide-react';
 import { dispatchLoadingStart, dispatchLoadingEnd } from '../common/ButtonLoading';
+import aafcLogo from '../../assets/aafc_logo.jpg';
 
 interface HeaderProps {
   onBack?: () => void;
@@ -18,7 +19,16 @@ export const Header: React.FC<HeaderProps> = ({
   isSidebarCollapsed,
 }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, signOut } = useAuthStore();
+
+  const handleLogoClick = () => {
+    if (location.pathname === '/') {
+      onToggleSidebar?.();
+    } else {
+      navigate('/');
+    }
+  };
 
   const handleLogout = async () => {
     dispatchLoadingStart();
@@ -31,12 +41,12 @@ export const Header: React.FC<HeaderProps> = ({
       <div style={styles.leftSection}>
         {onToggleSidebar && (
           <button
-            onClick={onToggleSidebar}
+            onClick={handleLogoClick}
             style={styles.menuButton}
             aria-label={isSidebarCollapsed ? 'Expandir menu' : 'Colapsar menu'}
             title={isSidebarCollapsed ? 'Expandir menu' : 'Colapsar menu'}
           >
-            {isSidebarCollapsed ? <PanelLeft size={20} /> : <PanelLeftClose size={20} />}
+            <img src={aafcLogo} alt="AAFCorsan" style={styles.logoImage} />
           </button>
         )}
         {showBack && onBack && (
@@ -81,14 +91,22 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '36px',
-    height: '36px',
-    borderRadius: '8px',
-    backgroundColor: 'hsl(var(--secondary))',
+    width: '42px',
+    height: '42px',
+    borderRadius: '10px',
+    backgroundColor: 'transparent',
     color: 'hsl(var(--secondary-foreground))',
     border: 'none',
     cursor: 'pointer',
     transition: 'background-color 0.2s',
+    padding: 0,
+    overflow: 'hidden',
+  },
+  logoImage: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'contain',
+    borderRadius: '10px',
   },
   backButton: {
     display: 'flex',

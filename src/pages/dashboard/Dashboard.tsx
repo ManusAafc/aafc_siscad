@@ -1,19 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import { 
   Users, 
-  CheckCircle, 
-  Calendar, 
-  CreditCard, 
   UserSearch, 
   UserPlus, 
-  CalendarSearch, 
-  CalendarPlus,
   RefreshCw
 } from 'lucide-react';
-import aafcLogo from '../../assets/aafc_logo.jpg';
 import {
   BarChart,
   Bar,
@@ -22,36 +16,47 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
-  ResponsiveContainer,
 } from 'recharts';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { memberStats, meetingStats, loadDashboardData, isLoading } = useAppStore();
+  const { memberStats, loadDashboardData, isLoading } = useAppStore();
 
-  useEffect(() => {
-    loadDashboardData();
-  }, [loadDashboardData]);
+  const [pullDistance, setPullDistance] = useState(0);
+  const [isPulling, setIsPulling] = useState(false);
+  const startY = useRef(0);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const onRefresh = async () => {
     await loadDashboardData();
   };
 
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (containerRef.current && containerRef.current.scrollTop === 0) {
+      startY.current = e.touches[0].clientY;
+      setIsPulling(true);
+    }
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!isPulling) return;
+    const currentY = e.touches[0].clientY;
+    const distance = Math.max(0, currentY - startY.current);
+    setPullDistance(Math.min(distance * 0.5, 100));
+  }, [isPulling]);
+
+  const handleTouchEnd = useCallback(async () => {
+    if (pullDistance > 60) {
+      await onRefresh();
+    }
+    setPullDistance(0);
+    setIsPulling(false);
+  }, [pullDistance]);
+
   const getTotalMembers = () => {
     if (!memberStats) return 0;
     return memberStats.totalCount || 0;
-  };
-
-  const getConfirmedMembers = () => {
-    if (!memberStats || !memberStats.byStatus) return 0;
-    const confirmed = memberStats.byStatus.find(s => s.statusId === 1);
-    return confirmed ? confirmed.count || 0 : 0;
-  };
-
-  const getActivePlans = () => {
-    if (!memberStats || !memberStats.byPlan) return 0;
-    return memberStats.byPlan.length;
   };
 
   if (isLoading && !memberStats) {
@@ -64,21 +69,42 @@ export const Dashboard: React.FC = () => {
   }
 
   return (
-    <div style={styles.container}>
+    <div 
+      ref={containerRef}
+      style={styles.container}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Pull to refresh indicator */}
+      {pullDistance > 0 && (
+        <div style={{ ...styles.pullIndicator, height: `${pullDistance}px`, opacity: pullDistance / 100 }}>
+          <RefreshCw 
+            size={24} 
+            className={pullDistance > 60 ? 'spinner' : ''} 
+            style={{ 
+              transform: `rotate(${pullDistance * 3}deg)`,
+              color: pullDistance > 60 ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))'
+            }} 
+          />
+          <span style={{ color: pullDistance > 60 ? 'hsl(var(--primary))' : 'hsl(var(--muted-foreground))' }}>
+            {pullDistance > 60 ? 'Solte para atualizar' : 'Puxe para baixo'}
+          </span>
+        </div>
+      )}
+
       {/* Header */}
       <div style={styles.header}>
-        <div>
-          <img src={aafcLogo} alt="AAFCorsan" style={styles.logoImage} />
+        <div style={styles.headerLeft}>
+          <button onClick={() => navigate('/members')} className="btn btn-secondary" style={styles.headerActionBtn}>
+            <UserSearch size={18} />
+            <span>Buscar Socios</span>
+          </button>
+          <button onClick={() => navigate('/members/new')} className="btn btn-primary" style={styles.headerActionBtn}>
+            <UserPlus size={18} />
+            <span>Novo Socio</span>
+          </button>
         </div>
-        <button 
-          onClick={onRefresh} 
-          className="btn btn-secondary" 
-          style={styles.refreshBtn}
-          disabled={isLoading}
-        >
-          <RefreshCw size={16} className={isLoading ? 'spinner' : ''} />
-          <span>Atualizar</span>
-        </button>
       </div>
 
       {/* Stats Cards Grid */}
@@ -93,102 +119,49 @@ export const Dashboard: React.FC = () => {
           <h2 style={styles.statValue}>{getTotalMembers()}</h2>
         </div>
 
-        <div className="card" style={styles.statCard}>
-          <div style={styles.statHeader}>
-            <div style={{ ...styles.iconWrapper, backgroundColor: 'rgba(16, 185, 129, 0.1)', color: 'rgb(16, 185, 129)' }}>
-              <CheckCircle size={22} />
-            </div>
-            <span style={styles.statLabel}>Confirmados</span>
-          </div>
-          <h2 style={styles.statValue}>{getConfirmedMembers()}</h2>
-        </div>
-
-        <div className="card" style={styles.statCard}>
-          <div style={styles.statHeader}>
-            <div style={{ ...styles.iconWrapper, backgroundColor: 'rgba(59, 130, 246, 0.1)', color: 'rgb(59, 130, 246)' }}>
-              <Calendar size={22} />
-            </div>
-            <span style={styles.statLabel}>Reuniões</span>
-          </div>
-          <h2 style={styles.statValue}>{meetingStats?.totalCount || 0}</h2>
-        </div>
-
-        <div className="card" style={styles.statCard}>
-          <div style={styles.statHeader}>
-            <div style={{ ...styles.iconWrapper, backgroundColor: 'rgba(245, 158, 11, 0.1)', color: 'rgb(245, 158, 11)' }}>
-              <CreditCard size={22} />
-            </div>
-            <span style={styles.statLabel}>Planos Ativos</span>
-          </div>
-          <h2 style={styles.statValue}>{getActivePlans()}</h2>
-        </div>
       </div>
 
       {/* Timeline Chart */}
       {memberStats && memberStats.timeline && memberStats.timeline.length > 0 && (
         <div className="card" style={styles.sectionCard}>
           <h3 style={styles.sectionTitle}>Linha do Tempo - Últimos 12 Meses</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={memberStats.timeline} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis 
-                dataKey="month" 
-                tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                tickFormatter={(value) => {
-                  const [year, month] = value.split('-');
-                  const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-                  return `${monthNames[parseInt(month) - 1]}/${year.slice(2)}`;
-                }}
-              />
-              <YAxis tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--card))', 
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px',
-                }}
-                labelFormatter={(value) => {
-                  const [year, month] = value.split('-');
-                  const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-                  return `${monthNames[parseInt(month) - 1]} ${year}`;
-                }}
-              />
-              <Legend />
-              <Bar dataKey="entradas" name="Entradas" fill="rgb(16, 185, 129)" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="saidas" name="Desligamentos" fill="rgb(239, 68, 68)" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <div style={{ overflowX: 'auto' }}>
+            <div style={{ width: `${Math.max(memberStats.timeline.length * 80, 600)}px`, height: '300px' }}>
+              <BarChart data={memberStats.timeline} width={Math.max(memberStats.timeline.length * 80, 600)} height={300} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis 
+                  dataKey="month" 
+                  tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                  tickFormatter={(value) => {
+                    const [year, month] = value.split('-');
+                    const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+                    return `${monthNames[parseInt(month) - 1]}/${year.slice(2)}`;
+                  }}
+                />
+                <YAxis tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                  }}
+                  labelFormatter={(value) => {
+                    const [year, month] = String(value).split('-');
+                    const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+                    return `${monthNames[parseInt(month) - 1]} ${year}`;
+                  }}
+                />
+                <Legend />
+                <Bar dataKey="saidas" name="Desligamentos" fill="rgb(239, 68, 68)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="entradas" name="Entradas" fill="rgb(16, 185, 129)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Content Section: Quick Actions & Status */}
+      {/* Content Section: Status */}
       <div style={styles.contentGrid}>
-        {/* Quick Actions */}
-        <div className="card" style={styles.sectionCard}>
-          <h3 style={styles.sectionTitle}>Ações Rápidas</h3>
-          <div style={styles.actionsGrid}>
-            <button onClick={() => navigate('/members')} style={styles.actionBtn}>
-              <UserSearch size={28} style={{ color: 'hsl(var(--primary))' }} />
-              <span style={styles.actionLabel}>Buscar Socios</span>
-            </button>
-
-            <button onClick={() => navigate('/members/new')} style={styles.actionBtn}>
-              <UserPlus size={28} style={{ color: 'rgb(16, 185, 129)' }} />
-              <span style={styles.actionLabel}>Novo Socio</span>
-            </button>
-
-            <button onClick={() => navigate('/meetings')} style={styles.actionBtn}>
-              <CalendarSearch size={28} style={{ color: 'rgb(59, 130, 246)' }} />
-              <span style={styles.actionLabel}>Buscar Reuniões</span>
-            </button>
-
-            <button onClick={() => navigate('/meetings/new')} style={styles.actionBtn}>
-              <CalendarPlus size={28} style={{ color: 'rgb(245, 158, 11)' }} />
-              <span style={styles.actionLabel}>Nova Reunião</span>
-            </button>
-          </div>
-        </div>
-
         {/* Status Distribution */}
         {memberStats && memberStats.byPlan && memberStats.byPlan.length > 0 && (
           <div className="card" style={styles.sectionCard}>
@@ -235,6 +208,29 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '1rem',
+  },
+  headerLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
+  },
+  headerActionBtn: {
+    padding: '0.5rem 1rem',
+    fontSize: '0.875rem',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+  },
+  pullIndicator: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.5rem',
+    overflow: 'hidden',
+    transition: 'height 0.2s ease',
   },
   greeting: {
     fontSize: '1.75rem',
@@ -245,18 +241,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '0.875rem',
     color: 'hsl(var(--muted-foreground))',
     marginTop: '0.25rem',
-  },
-  logoImage: {
-    height: '70px',
-    width: '70px',
-    borderRadius: '12px',
-  },
-  refreshBtn: {
-    padding: '0.5rem 1rem',
-    fontSize: '0.875rem',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.5rem',
   },
   statsGrid: {
     display: 'grid',
@@ -305,29 +289,6 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '1.125rem',
     fontWeight: 600,
     marginBottom: '1.25rem',
-    color: 'hsl(var(--foreground))',
-  },
-  actionsGrid: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '1rem',
-  },
-  actionBtn: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '0.75rem',
-    padding: '1.5rem 1rem',
-    borderRadius: 'var(--radius)',
-    border: '1px solid hsl(var(--border))',
-    backgroundColor: 'hsl(var(--background))',
-    transition: 'all 0.2s ease',
-    cursor: 'pointer',
-  },
-  actionLabel: {
-    fontSize: '0.875rem',
-    fontWeight: 500,
     color: 'hsl(var(--foreground))',
   },
   statusList: {

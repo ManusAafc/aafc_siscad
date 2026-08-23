@@ -1,18 +1,30 @@
 export const formatCPF = (cpf: string): string => {
   const digits = cpf.replace(/\D/g, '');
-  if (digits.length !== 11) return cpf;
-  return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+  if (digits.length > 11) return cpf.substring(0, 14);
+  
+  if (digits.length > 9) {
+    return digits.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+  }
+  if (digits.length > 6) {
+    return digits.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+  }
+  if (digits.length > 3) {
+    return digits.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+  }
+  return digits;
 };
 
 export const formatMobile = (mobile: string): string => {
   const digits = mobile.replace(/\D/g, '');
-  if (digits.length === 11) {
-    return digits.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+  if (digits.length > 11) return mobile.substring(0, 15);
+
+  if (digits.length > 6) {
+    return digits.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
   }
-  if (digits.length === 10) {
-    return digits.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+  if (digits.length > 2) {
+    return digits.replace(/(\d{2})(\d{0,5})/, '($1) $2');
   }
-  return mobile;
+  return digits;
 };
 
 export const formatCEP = (cep: string): string => {
