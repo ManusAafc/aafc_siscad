@@ -8,8 +8,7 @@ import {
   Pencil, 
   User, 
   Calendar, 
-  Male,
-  Female,
+  UserRound,
   Church, 
   Phone, 
   Mail, 
@@ -90,7 +89,9 @@ export const MemberShow: React.FC = () => {
           <h2 style={styles.memberName}>{member.name}</h2>
           <div style={styles.badgeRow}>
             {(() => {
-              const statusId = Number(member.statusId ?? member.status ?? 0);
+              const statusId = Number(
+                member.statusId ?? member.status ?? 0
+              );
               let label = member.statusName || member.statusDescription;
               let color = '#000000';
               let bg = '#e2e8f0';
@@ -125,13 +126,13 @@ export const MemberShow: React.FC = () => {
               );
             })()}
             {(() => {
-              const plan = member.planDescription || member.planName || member.plan_description || member.plan_name || member.db_member_plan_description || member.db_plan_description || member.plan;
+              const plan = member.planDescription || member.planName;
               return (
                 <span style={styles.badgeSecondary}>{plan || 'Sem plano associado'}</span>
               );
             })()}
             {(() => {
-              const region = member.regionDescription || member.regionName || member.region_description || member.region_name || member.db_member_region_description || member.db_region_description || member.region;
+              const region = member.regionDescription || member.regionName;
               return (
                 <span style={styles.badgeSecondary}>{region || 'Sem região'}</span>
               );
@@ -159,8 +160,8 @@ export const MemberShow: React.FC = () => {
             <div style={styles.infoContent}>
               <span style={styles.infoLabel}>Data de Nascimento</span>
               <span style={styles.infoValue}>
-                {(member.birthday || member.birthDate || member.date_of_birth || member.db_member_birthday) 
-                  ? formatBirthDateWithAge(member.birthday || member.birthDate || member.date_of_birth || member.db_member_birthday) 
+                {(member.birthday || member.birthDate) 
+                  ? formatBirthDateWithAge((member.birthday || member.birthDate) as string) 
                   : 'Não informado'}
               </span>
             </div>
@@ -168,13 +169,13 @@ export const MemberShow: React.FC = () => {
 
           <div style={styles.infoRow}>
             {(() => {
-              const rawGender = String(member.genderCode || member.gender || member.gender_code || member.db_member_gender_code || '').toLowerCase().trim();
+              const rawGender = String(member.genderCode || member.gender || '').toLowerCase().trim();
               const isMale = rawGender === 'm' || rawGender === 'masculino' || rawGender.includes('masc');
               const isFemale = rawGender === 'f' || rawGender === 'feminino' || rawGender.includes('fem');
-              const genderLabel = isMale ? 'MASCULINO' : isFemale ? 'FEMININO' : (member.genderCode || member.gender || member.gender_code || member.db_member_gender_code || 'Não informado');
+              const genderLabel = isMale ? 'MASCULINO' : isFemale ? 'FEMININO' : (member.genderCode || member.gender || 'Não informado');
               return (
                 <>
-                  {(isMale ? <Male size={18} style={styles.infoIcon} /> : <Female size={18} style={styles.infoIcon} />)}
+                  <UserRound size={18} style={styles.infoIcon} />
                   <div style={styles.infoContent}>
                     <span style={styles.infoLabel}>Gênero</span>
                     <span style={styles.infoValue}>{genderLabel}</span>
@@ -194,8 +195,8 @@ export const MemberShow: React.FC = () => {
             <div style={styles.infoContent}>
               <span style={styles.infoLabel}>Telefone</span>
               <span style={styles.infoValue}>
-                {(member.mobile || member.mobile_number || member.phone || member.db_member_mobile) 
-                  ? formatPhone(member.mobile || member.mobile_number || member.phone || member.db_member_mobile) 
+                {(member.mobile || member.phone) 
+                  ? formatPhone(member.mobile || member.phone) 
                   : 'Não informado'}
               </span>
             </div>
@@ -206,7 +207,7 @@ export const MemberShow: React.FC = () => {
             <div style={styles.infoContent}>
               <span style={styles.infoLabel}>Email</span>
               <span style={styles.infoValue}>
-                {member.email || member.email_address || member.db_member_email || 'Não informado'}
+                {member.email || 'Não informado'}
               </span>
             </div>
           </div>
@@ -216,12 +217,12 @@ export const MemberShow: React.FC = () => {
             <div style={styles.infoContent}>
               <span style={styles.infoLabel}>WhatsApp</span>
               <span style={styles.infoValue}>
-                {member.whatsapp || member.whatsapp_number || member.db_member_whatsapp || 'Não informado'}
+                {member.whatsappId || member.whatsapp || 'Não informado'}
               </span>
             </div>
           </div>
 
-          {(member.mobile || member.mobile_number || member.phone || member.db_member_mobile) && (
+          {(member.mobile || member.phone) && (
             <button 
               onClick={handleSendWhatsApp} 
               style={styles.whatsappBtn}
@@ -239,9 +240,9 @@ export const MemberShow: React.FC = () => {
           <div style={styles.infoRow}>
             <MapPin size={18} style={styles.infoIcon} />
             <div style={styles.infoContent}>
-              <span style={styles.infoLabel}>Endereço</span>
+              <span style={styles.infoLabel}>Logradouro</span>
               <span style={styles.infoValue}>
-                {member.address || member.address_full || member.addressFull || member.db_member_address || 'Não informado'}
+                {member.address || 'Não informado'}
               </span>
             </div>
           </div>
@@ -251,7 +252,7 @@ export const MemberShow: React.FC = () => {
             <div style={styles.infoContent}>
               <span style={styles.infoLabel}>Bairro</span>
               <span style={styles.infoValue}>
-                {member.neighborhood || member.neighborhood_name || member.neighborhoodName || member.db_member_neighborhood || 'Não informado'}
+                {member.neighborhood || 'Não informado'}
               </span>
             </div>
           </div>
@@ -259,9 +260,13 @@ export const MemberShow: React.FC = () => {
           <div style={styles.infoRow}>
             <MapPin size={18} style={styles.infoIcon} />
             <div style={styles.infoContent}>
-              <span style={styles.infoLabel}>Estado / UF</span>
+              <span style={styles.infoLabel}>Cidade / UF</span>
               <span style={styles.infoValue}>
-                {member.stateDescription || member.stateDescription_full || member.stateCode || member.state_code || member.db_member_state_description || member.db_member_state_code || 'Não informado'}
+                {(member.cityName || member.cityDescription || '') + 
+                 ((member.cityName || member.cityDescription) && 
+                  (member.stateDescription || member.stateCode) ? ' / ' : '') + 
+                  (member.stateDescription || member.stateCode || '') 
+                  || 'Não informado'}
               </span>
             </div>
           </div>
@@ -271,17 +276,7 @@ export const MemberShow: React.FC = () => {
             <div style={styles.infoContent}>
               <span style={styles.infoLabel}>CEP</span>
               <span style={styles.infoValue}>
-                {member.zipCode || member.zip_code || member.zipCodeMask || member.zip_code_mask || member.db_member_zip_code || 'Não informado'}
-              </span>
-            </div>
-          </div>
-
-          <div style={styles.infoRow}>
-            <MapPin size={18} style={styles.infoIcon} />
-            <div style={styles.infoContent}>
-              <span style={styles.infoLabel}>Cidade</span>
-              <span style={styles.infoValue}>
-                {member.cityName || member.cityDescription || member.city_name || member.city_description || member.db_member_city_description || 'Não informado'}
+                {member.zipCodeMask || member.zipCode || 'Não informado'}
               </span>
             </div>
           </div>

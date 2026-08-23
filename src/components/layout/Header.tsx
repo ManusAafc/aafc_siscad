@@ -1,107 +1,138 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-} from 'react-native';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { Colors } from '../../config/constants';
+import { Link, useLocation } from 'react-router-dom';
+import { useAuthStore } from '../../store/useAuthStore';
+import { LogOut, ChevronLeft, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { dispatchLoadingStart, dispatchLoadingEnd } from '../common/ButtonLoading';
 
 interface HeaderProps {
-  title: string;
-  subtitle?: string;
   onBack?: () => void;
-  rightAction?: {
-    icon: string;
-    onPress: () => void;
-  };
   showBack?: boolean;
+  onToggleSidebar?: () => void;
+  isSidebarCollapsed?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  title,
-  subtitle,
   onBack,
-  rightAction,
-  showBack = true,
+  showBack = false,
+  onToggleSidebar,
+  isSidebarCollapsed,
 }) => {
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <View style={styles.leftSection}>
-          {showBack && onBack && (
-            <TouchableOpacity onPress={onBack} style={styles.backButton}>
-              <MaterialCommunityIcons
-                name="arrow-left"
-                size={24}
-                color={Colors.textPrimary}
-              />
-            </TouchableOpacity>
-          )}
-          <View style={styles.titleContainer}>
-            <Text style={styles.title} numberOfLines={1}>
-              {title}
-            </Text>
-            {subtitle && (
-              <Text style={styles.subtitle} numberOfLines={1}>
-                {subtitle}
-              </Text>
-            )}
-          </View>
-        </View>
+  const location = useLocation();
+  const { user, signOut } = useAuthStore();
 
-        {rightAction && (
-          <TouchableOpacity onPress={rightAction.onPress} style={styles.actionButton}>
-            <MaterialCommunityIcons
-              name={rightAction.icon as any}
-              size={24}
-              color={Colors.primary}
-            />
-          </TouchableOpacity>
+  const handleLogout = async () => {
+    dispatchLoadingStart();
+    await signOut();
+    dispatchLoadingEnd();
+  };
+
+  return (
+    <header style={styles.header}>
+      <div style={styles.leftSection}>
+        {onToggleSidebar && (
+          <button
+            onClick={onToggleSidebar}
+            style={styles.menuButton}
+            aria-label={isSidebarCollapsed ? 'Expandir menu' : 'Colapsar menu'}
+            title={isSidebarCollapsed ? 'Expandir menu' : 'Colapsar menu'}
+          >
+            {isSidebarCollapsed ? <PanelLeft size={20} /> : <PanelLeftClose size={20} />}
+          </button>
         )}
-      </View>
-    </SafeAreaView>
+        {showBack && onBack && (
+          <button onClick={onBack} style={styles.backButton} aria-label="Voltar">
+            <ChevronLeft size={20} />
+          </button>
+        )}
+      </div>
+
+      <div style={styles.rightSection}>
+        <div style={styles.userMenu}>
+          <span style={styles.userName}>
+            {user.nameShort || user.nameFull?.split(' ')[0] || user.email?.split('@')[0] || 'Usuário'}
+          </span>
+          <button onClick={handleLogout} style={styles.logoutButton} aria-label="Sair">
+            <LogOut size={18} />
+          </button>
+        </div>
+      </div>
+    </header>
   );
 };
 
-const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: Colors.white,
-  },
-  container: {
-    flexDirection: 'row',
+const styles: Record<string, React.CSSProperties> = {
+  header: {
+    display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    padding: '0.75rem 1.5rem',
+    backgroundColor: 'hsl(var(--card))',
+    borderBottom: '1px solid hsl(var(--border))',
+    position: 'sticky',
+    top: 0,
+    zIndex: 100,
   },
   leftSection: {
-    flex: 1,
-    flexDirection: 'row',
+    display: 'flex',
     alignItems: 'center',
+    gap: '0.75rem',
+  },
+  menuButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '36px',
+    height: '36px',
+    borderRadius: '8px',
+    backgroundColor: 'hsl(var(--secondary))',
+    color: 'hsl(var(--secondary-foreground))',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
   },
   backButton: {
-    marginRight: 12,
-    padding: 4,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '36px',
+    height: '36px',
+    borderRadius: '8px',
+    backgroundColor: 'hsl(var(--secondary))',
+    color: 'hsl(var(--secondary-foreground))',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
   },
-  titleContainer: {
-    flex: 1,
+  rightSection: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '1rem',
   },
-  title: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: Colors.textPrimary,
+  userMenu: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.75rem',
   },
-  subtitle: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginTop: 2,
+  userName: {
+    fontSize: '0.875rem',
+    fontWeight: 500,
+    color: 'hsl(var(--foreground))',
+    maxWidth: '150px',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
-  actionButton: {
-    padding: 4,
+  logoutButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '36px',
+    height: '36px',
+    borderRadius: '8px',
+    backgroundColor: 'hsl(var(--secondary))',
+    color: 'hsl(var(--secondary-foreground))',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
   },
-});
+};

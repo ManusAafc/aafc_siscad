@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { IMember, IPlan, IRegion, ICity } from '../../models';
+import { IMember, IPlan, ICity, IGender, IMemberStatus } from '../../models';
 import { memberService } from '../../services/memberService';
 import { planService } from '../../services/planService';
+import { genderService } from '../../services/genderService';
+import { statusService } from '../../services/statusService';
 import { dispatchLoadingStart, dispatchLoadingEnd } from '../../components/common/ButtonLoading';
-import { regionService } from '../../services/regionService';
 import { cityService } from '../../services/cityService';
 import { ArrowLeft, Save, UserPlus } from 'lucide-react';
+import { formatCEP, formatMobile, formatCPF } from '../../utils/formatters';
 
 export const MemberCU: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,55 +20,69 @@ export const MemberCU: React.FC = () => {
     cpf: '',
     birthDate: '',
     gender: '',
-    maritalStatus: '',
-    baptismStatus: '',
     mobile: '',
-    whatsapp: '',
     email: '',
     address: '',
+    neighborhood: '',
+    zipCode: '',
     cityId: undefined,
-    regionId: undefined,
     planId: undefined,
     status: 1,
   });
 
   const [plans, setPlans] = useState<IPlan[]>([]);
-  const [regions, setRegions] = useState<IRegion[]>([]);
   const [cities, setCities] = useState<ICity[]>([]);
+  const [genders, setGenders] = useState<IGender[]>([]);
+  const [statuses, setStatuses] = useState<IMemberStatus[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  useEffect(() => {
-    loadData();
-  }, [id]);
-
-  useEffect(() => {
-    if (formData.regionId) {
-      loadCities(Number(formData.regionId));
-    } else {
-      setCities([]);
-    }
-  }, [formData.regionId]);
-
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [plansData, regionsData] = await Promise.all([
+      const [plansData, gendersData, statusesData] = await Promise.all([
         planService.getAllPlans(),
-        regionService.getAllRegions(),
+        genderService.getAllGenders(),
+        statusService.getAllStatuses(),
       ]);
       setPlans(plansData);
-      setRegions(regionsData);
+      setGenders(gendersData);
+      setStatuses(statusesData);
 
       if (isEditing && id) {
         const member = await memberService.getMemberById(id);
         if (member) {
-          // Garante que se houver data de nascimento, venha formatada no padrao YYYY-MM-DD para o input type="date"
-          const birthDateFormatted = member.birthDate ? member.birthDate.split('T')[0] : '';
+          // Mapeia genderId do banco para a descrição do genders table
+          // Usa gendersData local (ja carregado) em vez do state genders
+          let genderValue = '';
+          const genderId = member.genderId;
+          if (genderId) {
+            const foundGender = gendersData.find((g) => g.id === genderId);
+            if (foundGender) {
+              genderValue = foundGender.description;
+            }
+          }
+          
+          // Mapeia os campos da API para os campos do formulario (suporta camelCase e snake_case do banco)
+          const birthDateFormatted = (member.birthday || member.birthDate || '').split('T')[0];
+          
+          const statusId = member.statusId ?? member.status ?? 1;
+          console.log('DEBUG final statusId being set:', statusId, 'member:', member);
+          
           setFormData({
-            ...member,
+            name: member.name || '',
+            cpf: member.cpfMask || member.cpf || '',
             birthDate: birthDateFormatted,
+            gender: genderValue,
+            mobile: member.mobileMask || member.mobile || '',
+            email: member.email || '',
+            address: member.address || '',
+            neighborhood: member.neighborhood || '',
+            zipCode: member.zipCodeMask || member.zipCode || '',
+            cityId: member.cityId,
+            planId: member.planId,
+            status: statusId,
           });
         }
       }
@@ -76,17 +92,32 @@ export const MemberCU: React.FC = () => {
     setIsLoading(false);
   };
 
-  const loadCities = async (regionId: number) => {
+  const loadAllCities = async () => {
     try {
-      const citiesData = await cityService.getCitiesByRegion(regionId);
+      const citiesData = await cityService.getAllCities();
       setCities(citiesData);
     } catch (error) {
       console.error('Erro ao carregar cidades:', error);
     }
   };
 
+  useEffect(() => {
+    loadAllCities();
+  }, []);
+
   const handleChange = (field: keyof IMember, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    // Aplica mascara de CEP ao digitar
+    let formattedValue = value;
+    if (field === 'zipCode') {
+      formattedValue = formatCEP(value);
+    }
+    if (field === 'mobile') {
+      formattedValue = formatMobile(value);
+    }
+    if (field === 'cpf') {
+      formattedValue = formatCPF(value);
+    }
+    setFormData((prev) => ({ ...prev, [field]: formattedValue }));
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: '' }));
     }
@@ -117,14 +148,41 @@ export const MemberCU: React.FC = () => {
       return;
     }
 
+    // Prepara dados para envio ao banco (mapeia campos do formulario para colunas da tabela)
+    const cpfNumbers = (formData.cpf || '').replace(/\D/g, '');
+    const mobileNumbers = (formData.mobile || '').replace(/\D/g, '');
+    const zipNumbers = (formData.zipCode || '').replace(/\D/g, '');
+
+    const mobileDDI = mobileNumbers ? `55${mobileNumbers}` : '';
+    const whatsappId = mobileNumbers && mobileNumbers.length === 11 
+      ? `${mobileDDI.substring(0, 4)}${mobileDDI.substring(5)}@s.whatsapp.net` 
+      : '';
+
+    const submitData = {
+      ...formData,
+      // CPF
+      cpf_mask: formData.cpf,
+      cpf: cpfNumbers || undefined,
+      // Celular
+      mobile_mask: formData.mobile,
+      mobile: mobileNumbers || undefined,
+      mobile_ddi: mobileDDI || undefined,
+      whatsapp_id: whatsappId || undefined,
+      // CEP
+      zip_code_mask: formData.zipCode,
+      zip_code: zipNumbers || undefined,
+      // Remove campos auxiliares do formulario
+      zipCode: undefined,
+    };
+
     setIsSaving(true);
     dispatchLoadingStart();
     try {
       if (isEditing && id) {
-        await memberService.updateMember(id, formData);
+        await memberService.updateMember(id, submitData);
         alert('Socio atualizado com sucesso!');
       } else {
-        await memberService.createMember(formData);
+        await memberService.createMember(submitData);
         alert('Socio criado com sucesso!');
       }
       navigate('/members');
@@ -167,7 +225,7 @@ export const MemberCU: React.FC = () => {
               className="input-control"
               value={formData.name || ''}
               onChange={(e) => handleChange('name', e.target.value)}
-                placeholder="Nome completo do socio"
+              placeholder="Nome completo do socio"
               required
             />
             {errors.name && <span style={styles.errorText}>{errors.name}</span>}
@@ -207,40 +265,11 @@ export const MemberCU: React.FC = () => {
               onChange={(e) => handleChange('gender', e.target.value)}
             >
               <option value="">Selecione o gênero</option>
-              <option value="Masculino">Masculino</option>
-              <option value="Feminino">Feminino</option>
-            </select>
-          </div>
-
-          <div className="input-group">
-            <label className="input-label" htmlFor="maritalStatus">Estado Civil</label>
-            <select
-              id="maritalStatus"
-              className="input-control"
-              value={formData.maritalStatus || ''}
-              onChange={(e) => handleChange('maritalStatus', e.target.value)}
-            >
-              <option value="">Selecione o estado civil</option>
-              <option value="Solteiro(a)">Solteiro(a)</option>
-              <option value="Casado(a)">Casado(a)</option>
-              <option value="Divorciado(a)">Divorciado(a)</option>
-              <option value="Viúvo(a)">Viúvo(a)</option>
-              <option value="União Estável">União Estável</option>
-            </select>
-          </div>
-
-          <div className="input-group">
-            <label className="input-label" htmlFor="baptismStatus">Batismo</label>
-            <select
-              id="baptismStatus"
-              className="input-control"
-              value={formData.baptismStatus || ''}
-              onChange={(e) => handleChange('baptismStatus', e.target.value)}
-            >
-              <option value="">Selecione o status</option>
-              <option value="Batizado">Batizado</option>
-              <option value="Não Batizado">Não Batizado</option>
-              <option value="Em Catequese">Em Catequese</option>
+              {genders.map((g) => (
+                <option key={g.id} value={g.description}>
+                  {g.description}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -261,18 +290,6 @@ export const MemberCU: React.FC = () => {
             {errors.mobile && <span style={styles.errorText}>{errors.mobile}</span>}
           </div>
 
-          <div className="input-group">
-            <label className="input-label" htmlFor="whatsapp">WhatsApp</label>
-            <input
-              id="whatsapp"
-              type="text"
-              className="input-control"
-              value={formData.whatsapp || ''}
-              onChange={(e) => handleChange('whatsapp', e.target.value)}
-              placeholder="(00) 00000-0000"
-            />
-          </div>
-
           <div className="input-group" style={{ gridColumn: 'span 2' }}>
             <label className="input-label" htmlFor="email">Email</label>
             <input
@@ -290,30 +307,40 @@ export const MemberCU: React.FC = () => {
         <h3 style={styles.sectionTitle}>Endereço</h3>
         <div style={styles.formGrid}>
           <div className="input-group" style={{ gridColumn: 'span 2' }}>
-            <label className="input-label" htmlFor="address">Endereço Completo</label>
+            <label className="input-label" htmlFor="address">Logradouro</label>
             <input
               id="address"
               type="text"
               className="input-control"
               value={formData.address || ''}
               onChange={(e) => handleChange('address', e.target.value)}
-              placeholder="Rua, número, complemento, bairro"
+              placeholder="Rua, número, complemento"
             />
           </div>
 
           <div className="input-group">
-            <label className="input-label" htmlFor="regionId">Região</label>
-            <select
-              id="regionId"
+            <label className="input-label" htmlFor="neighborhood">Bairro</label>
+            <input
+              id="neighborhood"
+              type="text"
               className="input-control"
-              value={formData.regionId || ''}
-              onChange={(e) => handleChange('regionId', e.target.value ? Number(e.target.value) : undefined)}
-            >
-              <option value="">Selecione a região</option>
-              {regions.map((r) => (
-                <option key={r.id} value={r.id}>{r.name || r.description}</option>
-              ))}
-            </select>
+              value={formData.neighborhood || ''}
+              onChange={(e) => handleChange('neighborhood', e.target.value)}
+              placeholder="Bairro"
+            />
+          </div>
+
+          <div className="input-group">
+            <label className="input-label" htmlFor="zipCode">CEP</label>
+            <input
+              id="zipCode"
+              type="text"
+              className="input-control"
+              value={formData.zipCode || ''}
+              onChange={(e) => handleChange('zipCode', e.target.value)}
+              placeholder="00.000-000"
+              maxLength={10}
+            />
           </div>
 
           <div className="input-group">
@@ -323,7 +350,6 @@ export const MemberCU: React.FC = () => {
               className="input-control"
               value={formData.cityId || ''}
               onChange={(e) => handleChange('cityId', e.target.value ? Number(e.target.value) : undefined)}
-              disabled={!formData.regionId}
             >
               <option value="">Selecione a cidade</option>
               {cities.map((c) => (
@@ -333,8 +359,8 @@ export const MemberCU: React.FC = () => {
           </div>
         </div>
 
-        {/* Plano & Status */}
-        <h3 style={styles.sectionTitle}>Plano & Status</h3>
+        {/* Plano & Situação */}
+        <h3 style={styles.sectionTitle}>Plano & Situação</h3>
         <div style={styles.formGrid}>
           <div className="input-group">
             <label className="input-label" htmlFor="planId">Plano Associado</label>
@@ -352,16 +378,18 @@ export const MemberCU: React.FC = () => {
           </div>
 
           <div className="input-group">
-            <label className="input-label" htmlFor="status">Status</label>
+            <label className="input-label" htmlFor="status">Situação</label>
             <select
               id="status"
               className="input-control"
               value={formData.status || 1}
               onChange={(e) => handleChange('status', Number(e.target.value))}
             >
-              <option value={1}>Ativo</option>
-              <option value={2}>Pendente</option>
-              <option value={3}>Inativo</option>
+              {statuses.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.description}
+                </option>
+              ))}
             </select>
           </div>
         </div>

@@ -18,7 +18,7 @@ export const formatMobile = (mobile: string): string => {
 export const formatCEP = (cep: string): string => {
   const digits = cep.replace(/\D/g, '');
   if (digits.length !== 8) return cep;
-  return digits.replace(/(\d{5})(\d{3})/, '$1-$2');
+  return digits.replace(/(\d{2})(\d{3})(\d{3})/, '$1.$2-$3');
 };
 
 export const formatPhone = (phone: string): string => {

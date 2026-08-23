@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
+import { Header } from './Header';
 import aafcLogo from '../../assets/aafc_logo.jpg';
 import { 
   LayoutDashboard, 
@@ -12,9 +13,7 @@ import {
   ChevronRight,
   Settings,
   RefreshCw,
-  ChevronLeft,
-  ChevronsLeft,
-  ChevronsRight
+  ChevronLeft
 } from 'lucide-react';
 import { dispatchLoadingStart, dispatchLoadingEnd } from '../common/ButtonLoading';
 
@@ -79,14 +78,6 @@ export const Layout: React.FC = () => {
           {!isSidebarCollapsed && (
             <img src={aafcLogo} alt="AAFCorsan" style={styles.logoImage} />
           )}
-          <button
-            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            style={styles.collapseButton}
-            aria-label={isSidebarCollapsed ? 'Expandir menu' : 'Colapsar menu'}
-            title={isSidebarCollapsed ? 'Expandir menu' : 'Colapsar menu'}
-          >
-            {isSidebarCollapsed ? <ChevronsRight size={20} /> : <ChevronsLeft size={20} />}
-          </button>
         </div>
 
         <nav style={styles.navMenu}>
@@ -180,6 +171,12 @@ export const Layout: React.FC = () => {
           </div>
         )}
 
+        {/* Header */}
+        <Header 
+          onToggleSidebar={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          isSidebarCollapsed={isSidebarCollapsed}
+        />
+
         {/* Page Content Outlet */}
         <main style={styles.content}>
           <Outlet />
@@ -223,23 +220,6 @@ const styles: Record<string, React.CSSProperties> = {
     height: 'auto',
     borderRadius: '12px',
     transition: 'opacity 0.2s ease',
-  },
-  collapseButton: {
-    position: 'absolute',
-    top: '50%',
-    right: '0.5rem',
-    transform: 'translateY(-50%)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '28px',
-    height: '28px',
-    borderRadius: 'var(--radius)',
-    backgroundColor: 'hsl(var(--muted))',
-    color: 'hsl(var(--foreground))',
-    border: 'none',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
   },
   navMenu: {
     padding: '0.75rem',
