@@ -59,6 +59,10 @@ export const Dashboard: React.FC = () => {
     return memberStats.totalCount || 0;
   };
 
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
+
   if (isLoading && !memberStats) {
     return (
       <div style={styles.loadingContainer}>
