@@ -438,7 +438,7 @@ export const ProfilesPage: React.FC = () => {
             </div>
 
             <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
-              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowForm(false)}>
+              <button className="btn" style={{ flex: 1, backgroundColor: 'hsl(var(--destructive))', color: 'hsl(var(--destructive-foreground))' }} onClick={() => setShowForm(false)}>
                 Cancelar
               </button>
               <button

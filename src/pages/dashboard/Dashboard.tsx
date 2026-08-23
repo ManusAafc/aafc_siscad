@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppStore } from '../../store/useAppStore';
 import { useAuthStore } from '../../store/useAuthStore';
-import { formatFullDate } from '../../utils/formatters';
 import { 
   Users, 
   CheckCircle, 
@@ -14,6 +13,17 @@ import {
   CalendarPlus,
   RefreshCw
 } from 'lucide-react';
+import aafcLogo from '../../assets/aafc_logo.jpg';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -58,10 +68,7 @@ export const Dashboard: React.FC = () => {
       {/* Header */}
       <div style={styles.header}>
         <div>
-          <h1 style={styles.greeting}>
-            Olá, {(user.nameShort || user.nameFull || user.email?.split('@')[0] || 'Usuário').split(' ')[0]}!
-          </h1>
-          <p style={styles.date}>{formatFullDate(new Date().toISOString())}</p>
+          <img src={aafcLogo} alt="AAFCorsan" style={styles.logoImage} />
         </div>
         <button 
           onClick={onRefresh} 
@@ -117,6 +124,43 @@ export const Dashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Timeline Chart */}
+      {memberStats && memberStats.timeline && memberStats.timeline.length > 0 && (
+        <div className="card" style={styles.sectionCard}>
+          <h3 style={styles.sectionTitle}>Linha do Tempo - Últimos 12 Meses</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={memberStats.timeline} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis 
+                dataKey="month" 
+                tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                tickFormatter={(value) => {
+                  const [year, month] = value.split('-');
+                  const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+                  return `${monthNames[parseInt(month) - 1]}/${year.slice(2)}`;
+                }}
+              />
+              <YAxis tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--card))', 
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                }}
+                labelFormatter={(value) => {
+                  const [year, month] = value.split('-');
+                  const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+                  return `${monthNames[parseInt(month) - 1]} ${year}`;
+                }}
+              />
+              <Legend />
+              <Bar dataKey="entradas" name="Entradas" fill="rgb(16, 185, 129)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="saidas" name="Desligamentos" fill="rgb(239, 68, 68)" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
       {/* Content Section: Quick Actions & Status */}
       <div style={styles.contentGrid}>
         {/* Quick Actions */}
@@ -146,24 +190,24 @@ export const Dashboard: React.FC = () => {
         </div>
 
         {/* Status Distribution */}
-        {memberStats && memberStats.byStatus && (
+        {memberStats && memberStats.byPlan && memberStats.byPlan.length > 0 && (
           <div className="card" style={styles.sectionCard}>
-            <h3 style={styles.sectionTitle}>Socios por Status</h3>
+            <h3 style={styles.sectionTitle}>Socios Ativos por Plano</h3>
             <div style={styles.statusList}>
-              {memberStats.byStatus.map((stat) => (
-                <div key={stat.id} style={styles.statusRow}>
+              {memberStats.byPlan.map((plan: any) => (
+                <div key={plan.id} style={styles.statusRow}>
                   <div style={styles.statusInfo}>
                     <div 
                       style={{ 
                         ...styles.statusIndicator, 
-                        backgroundColor: stat.color || 'hsl(var(--primary))' 
+                        backgroundColor: 'hsl(var(--primary))'
                       }} 
                     />
                     <span style={styles.statusName}>
-                      {stat.description || stat.statusName || ''}
+                      {plan.name || plan.description || ''}
                     </span>
                   </div>
-                  <span style={styles.statusCount}>{stat.count || 0}</span>
+                  <span style={styles.statusCount}>{plan.count || 0}</span>
                 </div>
               ))}
             </div>
@@ -201,6 +245,11 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '0.875rem',
     color: 'hsl(var(--muted-foreground))',
     marginTop: '0.25rem',
+  },
+  logoImage: {
+    height: '70px',
+    width: '70px',
+    borderRadius: '12px',
   },
   refreshBtn: {
     padding: '0.5rem 1rem',

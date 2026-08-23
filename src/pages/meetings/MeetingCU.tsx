@@ -208,8 +208,8 @@ export const MeetingCU: React.FC = () => {
           <button 
             type="button" 
             onClick={() => navigate(isEditing ? `/meetings/${id}` : '/meetings')} 
-            className="btn btn-secondary"
-            style={{ flex: 1 }}
+            className="btn"
+            style={{ flex: 1, backgroundColor: 'hsl(var(--destructive))', color: 'hsl(var(--destructive-foreground))' }}
           >
             Cancelar
           </button>

@@ -15,6 +15,8 @@ export const cityService = {
         cityId: item.city_id,
         cityDescription: item.city_description || '',
         name: item.city_description || '',
+        stateCode: item.state_code || '',
+        stateDescription: item.state_description || '',
       }));
     } catch (error) {
       console.error('Erro ao buscar cidades:', error);
@@ -33,6 +35,8 @@ export const cityService = {
         cityId: item.city_id,
         cityDescription: item.city_description || '',
         name: item.city_description || '',
+        stateCode: item.state_code || '',
+        stateDescription: item.state_description || '',
       }));
     } catch (error) {
       console.error('Erro ao buscar cidades:', error);

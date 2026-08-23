@@ -6,6 +6,8 @@ export interface ICity {
   cityId: number;
   cityDescription: string;
   name?: string;
+  stateCode?: string;
+  stateDescription?: string;
 }
 
 export const EMPTY_CITY: ICity = {

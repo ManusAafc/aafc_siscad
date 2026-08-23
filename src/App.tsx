@@ -18,6 +18,8 @@ import { Layout } from './components/layout/Layout';
 import { LoadingBar } from './components/common/LoadingBar';
 import { SplashScreen } from './components/splash/SplashScreen';
 import { ToastContainer } from './components/common/Toast';
+import { AlertDialog } from './components/common/AlertDialog';
+import { ConfirmDialog } from './components/common/ConfirmDialog';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuthStore();
@@ -92,6 +94,8 @@ function App() {
     <BrowserRouter>
       <LoadingBar />
       <ToastContainer />
+      <AlertDialog />
+      <ConfirmDialog />
       <Routes>
         {/* Rotas Públicas */}
         <Route path="/login" element={<PublicRoute><SignIn /></PublicRoute>} />

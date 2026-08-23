@@ -280,7 +280,7 @@ export const MeetingShow: React.FC = () => {
               Tem certeza que deseja excluir permanentemente a reunião <strong>{meeting.title}</strong>? Esta ação não pode ser desfeita.
             </p>
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-              <button onClick={() => setShowDeleteModal(false)} className="btn btn-secondary">
+              <button onClick={() => setShowDeleteModal(false)} className="btn" style={{ backgroundColor: 'hsl(var(--destructive))', color: 'hsl(var(--destructive-foreground))' }}>
                 Cancelar
               </button>
               <button onClick={handleDelete} className="btn btn-primary" style={{ backgroundColor: 'hsl(var(--destructive))', color: '#fff' }} disabled={isDeleting}>

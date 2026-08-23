@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
 import { Header } from './Header';
-import aafcLogo from '../../assets/aafc_logo.jpg';
 import { 
   LayoutDashboard, 
   Users, 
@@ -75,9 +74,6 @@ export const Layout: React.FC = () => {
       {/* Sidebar - Desktop */}
       <aside className="desktop-sidebar" style={{ ...styles.sidebar, width: sidebarWidth }}>
         <div style={styles.sidebarHeader}>
-          {!isSidebarCollapsed && (
-            <img src={aafcLogo} alt="AAFCorsan" style={styles.logoImage} />
-          )}
         </div>
 
         <nav style={styles.navMenu}>
@@ -132,7 +128,6 @@ export const Layout: React.FC = () => {
           <div style={styles.mobileOverlay} onClick={() => setIsMobileMenuOpen(false)}>
             <div style={styles.mobileDrawer} onClick={(e) => e.stopPropagation()}>
               <div style={styles.sidebarHeader}>
-                <img src={aafcLogo} alt="AAFCorsan" style={styles.logoImage} />
                 <button
                   style={styles.mobileCloseButton}
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -213,13 +208,6 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'space-between',
     minHeight: '60px',
-  },
-  logoImage: {
-    width: '100%',
-    maxWidth: '180px',
-    height: 'auto',
-    borderRadius: '12px',
-    transition: 'opacity 0.2s ease',
   },
   navMenu: {
     padding: '0.75rem',

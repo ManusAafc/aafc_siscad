@@ -377,7 +377,7 @@ export const MemberCU: React.FC = () => {
           </div>
 
           <div className="input-group">
-            <label className="input-label" htmlFor="cityId">Cidade</label>
+            <label className="input-label" htmlFor="cityId">Cidade / UF</label>
             <select
               id="cityId"
               className="input-control"
@@ -386,7 +386,9 @@ export const MemberCU: React.FC = () => {
             >
               <option value="">Selecione a cidade</option>
               {cities.map((c) => (
-                <option key={c.cityId} value={c.cityId}>{c.name || c.cityDescription}</option>
+                <option key={c.cityId} value={c.cityId}>
+                  {c.name || c.cityDescription}{c.stateCode ? `/${c.stateCode}` : ''}
+                </option>
               ))}
             </select>
           </div>
@@ -470,8 +472,8 @@ export const MemberCU: React.FC = () => {
           <button 
             type="button" 
             onClick={() => navigate(isEditing ? `/members/${id}` : '/members')} 
-            className="btn btn-secondary"
-            style={{ flex: 1 }}
+            className="btn"
+            style={{ flex: 1, backgroundColor: 'hsl(var(--destructive))', color: 'hsl(var(--destructive-foreground))' }}
           >
             Cancelar
           </button>
