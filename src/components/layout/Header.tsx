@@ -58,7 +58,12 @@ export const Header: React.FC<HeaderProps> = ({
 
       <div style={styles.rightSection}>
         <div style={styles.userMenu}>
-          <span style={styles.userName}>
+          <span 
+            style={styles.userName} 
+            onClick={() => navigate('/profile')}
+            role="button"
+            tabIndex={0}
+          >
             {user.nameShort || user.nameFull?.split(' ')[0] || user.email?.split('@')[0] || 'Usuário'}
           </span>
           <button onClick={handleLogout} style={styles.logoutButton} aria-label="Sair">
@@ -139,6 +144,7 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+    cursor: 'pointer',
   },
   logoutButton: {
     display: 'flex',

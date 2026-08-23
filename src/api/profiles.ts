@@ -58,8 +58,12 @@ export const permissionsApi = {
   },
 
   async upsert(permissions: IPermission[]): Promise<IPermission[]> {
-    const response = await apiClient.post('/permissions', permissions, {
-      headers: { Prefer: 'return=representation,resolution=merge-duplicates' },
+    if (permissions.length === 0) return [];
+    const profileId = permissions[0].profile_id;
+    await apiClient.delete(`/permissions?profile_id=eq.${profileId}`);
+    const clean = permissions.map(({ id, ...rest }) => rest);
+    const response = await apiClient.post('/permissions', clean, {
+      headers: { Prefer: 'return=representation' },
     });
     return response.data || [];
   },

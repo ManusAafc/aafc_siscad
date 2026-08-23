@@ -14,6 +14,7 @@ import { MeetingShow } from './pages/meetings/MeetingShow';
 import { MeetingCU } from './pages/meetings/MeetingCU';
 import { MeetingMemberAdd } from './pages/meetings/MeetingMemberAdd';
 import { SettingsPage } from './pages/settings/SettingsPage';
+import { ProfilePage } from './pages/profile/ProfilePage';
 import { Layout } from './components/layout/Layout';
 import { LoadingBar } from './components/common/LoadingBar';
 import { SplashScreen } from './components/splash/SplashScreen';
@@ -115,6 +116,7 @@ function App() {
           <Route path="meetings/:id" element={<MeetingShow />} />
           <Route path="meetings/:id/edit" element={<MeetingCU />} />
           <Route path="meetings/:id/add-member" element={<MeetingMemberAdd />} />
+          <Route path="profile" element={<ProfilePage />} />
           <Route path="settings" element={<SuperAdminRoute><SettingsPage /></SuperAdminRoute>} />
         </Route>
 

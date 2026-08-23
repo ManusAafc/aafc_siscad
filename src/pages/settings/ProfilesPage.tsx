@@ -21,6 +21,7 @@ import {
   IProfile,
   IPermission,
 } from '../../api/profiles';
+import { usersApi, IUser } from '../../api/users';
 
 // ─── Módulos disponíveis no sistema ────────────────────────────────────────────
 const MODULES = [
@@ -86,6 +87,7 @@ export const ProfilesPage: React.FC = () => {
   const [profiles, setProfiles] = useState<IProfile[]>([]);
   const [selected, setSelected] = useState<IProfile | null>(null);
   const [permissions, setPermissions] = useState<IPermission[]>([]);
+  const [users, setUsers] = useState<IUser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -93,6 +95,12 @@ export const ProfilesPage: React.FC = () => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
   const [toast, setToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+
+  // ── Vincular/Desvincular usuários ───────────────────────────────────────────
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [userSearch, setUserSearch] = useState('');
+  const [availableUsers, setAvailableUsers] = useState<IUser[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   // ── Carregar perfis ─────────────────────────────────────────────────────────
   const loadProfiles = useCallback(async () => {
@@ -113,13 +121,21 @@ export const ProfilesPage: React.FC = () => {
   useEffect(() => {
     if (!selected?.id) return;
     permissionsApi.getByProfile(selected.id).then((data) => {
-      // Garante que todos os módulos existam
       const filled = MODULES.map((m) => {
         const existing = data.find((p) => p.module === m.key);
         return existing ?? defaultPermission(selected.id!, m.key);
       });
       setPermissions(filled);
     });
+  }, [selected]);
+
+  // ── Carregar usuários do perfil selecionado ────────────────────────────────
+  useEffect(() => {
+    if (!selected?.id) {
+      setUsers([]);
+      return;
+    }
+    usersApi.getByProfile(selected.id).then(setUsers);
   }, [selected]);
 
   const showToast = (msg: string, type: 'success' | 'error') => {
@@ -193,6 +209,64 @@ export const ProfilesPage: React.FC = () => {
     setPermissions((prev) =>
       prev.map((p) => (p.module === module ? { ...p, [field]: value } : p))
     );
+  };
+
+  // ── Vincular/Desvincular usuários ───────────────────────────────────────────
+  const openUserModal = async () => {
+    if (!selected?.id) return;
+    setShowUserModal(true);
+    setUserSearch('');
+    setLoadingUsers(true);
+    try {
+      const data = await usersApi.getAvailableForProfile(selected.id);
+      setAvailableUsers(data);
+    } catch {
+      showToast('Erro ao carregar usuários disponíveis.', 'error');
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const handleSearchUsers = async (query: string) => {
+    if (!selected?.id) return;
+    setUserSearch(query);
+    setLoadingUsers(true);
+    try {
+      const data = await usersApi.getAvailableForProfile(selected.id, query);
+      setAvailableUsers(data);
+    } catch {
+      showToast('Erro ao buscar usuários.', 'error');
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  const handleLinkUser = async (userId: string) => {
+    if (!selected?.id) return;
+    try {
+      await usersApi.updateProfile(userId, selected.id);
+      showToast('Usuário vinculado!', 'success');
+      const updated = await usersApi.getByProfile(selected.id);
+      setUsers(updated);
+      const available = await usersApi.getAvailableForProfile(selected.id, userSearch);
+      setAvailableUsers(available);
+    } catch {
+      showToast('Erro ao vincular usuário.', 'error');
+    }
+  };
+
+  const handleUnlinkUser = async (userId: string) => {
+    if (!selected?.id) return;
+    try {
+      await usersApi.updateProfile(userId, null);
+      showToast('Usuário desvinculado!', 'success');
+      const updated = await usersApi.getByProfile(selected.id);
+      setUsers(updated);
+      const available = await usersApi.getAvailableForProfile(selected.id, userSearch);
+      setAvailableUsers(available);
+    } catch {
+      showToast('Erro ao desvincular usuário.', 'error');
+    }
   };
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -388,6 +462,58 @@ export const ProfilesPage: React.FC = () => {
                   );
                 })}
               </div>
+
+              {/* Usuários do perfil — abaixo da tabela de permissões */}
+              <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid hsl(var(--border))' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                  <h4 style={{ fontWeight: 600, fontSize: '0.9rem' }}>
+                    Usuários deste perfil ({users.length})
+                  </h4>
+                  <button className="btn btn-primary" onClick={openUserModal} style={{ fontSize: '0.75rem', padding: '0.4rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <Plus size={12} />
+                    Adicionar
+                  </button>
+                </div>
+                {users.length === 0 ? (
+                  <p style={{ fontSize: '0.85rem', color: 'hsl(var(--muted-foreground))' }}>
+                    Nenhum usuário vinculado a este perfil
+                  </p>
+                ) : (
+                  <div style={s.userList}>
+                    {users.map((user) => (
+                      <div key={user.id} style={s.userItem}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          {user.profileImgPath && (
+                            <img
+                              src={user.profileImgPath}
+                              alt={user.nameFull}
+                              style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }}
+                            />
+                          )}
+                          <div>
+                            <div style={{ fontWeight: 500, fontSize: '0.85rem' }}>{user.nameFull}</div>
+                            <div style={{ fontSize: '0.75rem', color: 'hsl(var(--muted-foreground))' }}>{user.email}</div>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          {user.isAdminSuper && (
+                            <span style={{ fontSize: '0.65rem', fontWeight: 600, padding: '0.1rem 0.4rem', borderRadius: '99px', backgroundColor: '#fef3c7', color: '#92400e' }}>
+                              Super Admin
+                            </span>
+                          )}
+                          <button
+                            style={{ ...s.iconBtn, color: '#dc2626', padding: '0.3rem' }}
+                            onClick={() => handleUnlinkUser(user.id)}
+                            title="Desvincular usuário"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </>
           )}
         </div>
@@ -451,6 +577,73 @@ export const ProfilesPage: React.FC = () => {
                 {editingId ? 'Salvar Alterações' : 'Criar Perfil'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal Vincular Usuários ── */}
+      {showUserModal && (
+        <div style={s.overlay} onClick={() => setShowUserModal(false)}>
+          <div style={{ ...s.modal, maxWidth: '520px' }} onClick={(e) => e.stopPropagation()}>
+            <div style={s.modalHeader}>
+              <h3 style={{ fontWeight: 700 }}>Vincular Usuários — {selected?.name}</h3>
+              <button style={s.iconBtn} onClick={() => setShowUserModal(false)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="input-group">
+              <label className="input-label">Buscar usuários</label>
+              <input
+                className="input-control"
+                value={userSearch}
+                onChange={(e) => handleSearchUsers(e.target.value)}
+                placeholder="Nome ou email..."
+                autoFocus
+              />
+            </div>
+
+            {loadingUsers ? (
+              <div style={s.center}><RefreshCw size={20} className="spinner" style={{ color: 'hsl(var(--primary))' }} /></div>
+            ) : availableUsers.length === 0 ? (
+              <div style={s.empty}>
+                <Users size={32} style={{ color: 'hsl(var(--muted-foreground))', marginBottom: '0.5rem' }} />
+                <p style={{ color: 'hsl(var(--muted-foreground))', fontSize: '0.85rem' }}>
+                  {userSearch ? 'Nenhum usuário encontrado' : 'Todos os usuários já estão vinculados'}
+                </p>
+              </div>
+            ) : (
+              <div style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {availableUsers.map((user) => (
+                  <button
+                    key={user.id}
+                    style={{
+                      ...s.userItem,
+                      textAlign: 'left',
+                      backgroundColor: 'hsl(var(--muted))',
+                      border: 'none',
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => handleLinkUser(user.id)}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      {user.profileImgPath && (
+                        <img
+                          src={user.profileImgPath}
+                          alt={user.nameFull}
+                          style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }}
+                        />
+                      )}
+                      <div>
+                        <div style={{ fontWeight: 500, fontSize: '0.85rem' }}>{user.nameFull}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'hsl(var(--muted-foreground))' }}>{user.email}</div>
+                      </div>
+                    </div>
+                    <Plus size={16} style={{ color: 'hsl(var(--primary))' }} />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -537,6 +730,23 @@ const s: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+  },
+  userList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5rem',
+    maxHeight: '200px',
+    overflowY: 'auto',
+    paddingRight: '0.5rem',
+  },
+  userItem: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '0.5rem 0.75rem',
+    borderRadius: '8px',
+    backgroundColor: 'hsl(var(--muted))',
+    transition: 'background 0.15s',
   },
   iconBtn: {
     display: 'flex',

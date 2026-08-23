@@ -20,6 +20,7 @@ export interface IUser {
   dbMemberStatusId: number;
   isManagerMembers: boolean;
   isManagerMeetings: boolean;
+  profile_id?: number | null;
 }
 
 export const EMPTY_USER: IUser = {
@@ -44,4 +45,5 @@ export const EMPTY_USER: IUser = {
   dbMemberStatusId: 0,
   isManagerMembers: false,
   isManagerMeetings: false,
+  profile_id: null,
 };
