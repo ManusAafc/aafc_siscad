@@ -214,6 +214,77 @@ export const Dashboard: React.FC = () => {
         </div>
       </div>
 
+      {/* Stats Cards Grid */}
+      <div style={styles.statsGrid}>
+        <div className="card" style={styles.statCard}>
+          <div style={styles.statHeader}>
+            <div style={{ ...styles.iconWrapper, backgroundColor: 'hsla(var(--primary), 0.1)', color: 'hsl(var(--primary))' }}>
+              <Users size={22} />
+            </div>
+            <span style={styles.statLabel}>Total Socios</span>
+          </div>
+          <h2 style={styles.statValue}>{getTotalMembers()}</h2>
+        </div>
+
+        <div className="card" style={styles.statCard}>
+          <div style={styles.statHeader}>
+            <div style={{ ...styles.iconWrapper, backgroundColor: 'hsla(200, 90%, 50%, 0.1)', color: 'hsl(200, 90%, 50%)' }}>
+              <Users size={22} />
+            </div>
+            <span style={styles.statLabel}>Homens</span>
+          </div>
+          <h2 style={styles.statValue}>{loadingGenderCounts ? '—' : genderCounts.male}</h2>
+        </div>
+
+        <div className="card" style={styles.statCard}>
+          <div style={styles.statHeader}>
+            <div style={{ ...styles.iconWrapper, backgroundColor: 'hsla(330, 90%, 50%, 0.1)', color: 'hsl(330, 90%, 50%)' }}>
+              <Users size={22} />
+            </div>
+            <span style={styles.statLabel}>Mulheres</span>
+          </div>
+          <h2 style={styles.statValue}>{loadingGenderCounts ? '—' : genderCounts.female}</h2>
+        </div>
+
+      </div>
+
+      {/* Timeline Chart */}
+      {memberStats && memberStats.timeline && memberStats.timeline.length > 0 && (
+        <div className="card" style={styles.sectionCard}>
+          <h3 style={styles.sectionTitle}>Linha do Tempo - Últimos 12 Meses</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={memberStats.timeline} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis 
+                dataKey="month" 
+                tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                tickFormatter={(value) => {
+                  const [year, month] = value.split('-');
+                  const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+                  return `${monthNames[parseInt(month) - 1]}/${year.slice(2)}`;
+                }}
+              />
+              <YAxis tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--card))', 
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                }}
+                labelFormatter={(value) => {
+                  const [year, month] = String(value).split('-');
+                  const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+                  return `${monthNames[parseInt(month) - 1]} ${year}`;
+                }}
+              />
+              <Legend />
+              <Bar dataKey="saidas" name="Desligamentos" fill="rgb(239, 68, 68)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="entradas" name="Entradas" fill="rgb(16, 185, 129)" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
       {/* Birthday Carousel */}
       <div className="card" style={styles.birthdaySection}>
         <div style={styles.birthdayHeader}>
@@ -306,77 +377,6 @@ export const Dashboard: React.FC = () => {
           </div>
         )}
       </div>
-
-      {/* Stats Cards Grid */}
-      <div style={styles.statsGrid}>
-        <div className="card" style={styles.statCard}>
-          <div style={styles.statHeader}>
-            <div style={{ ...styles.iconWrapper, backgroundColor: 'hsla(var(--primary), 0.1)', color: 'hsl(var(--primary))' }}>
-              <Users size={22} />
-            </div>
-            <span style={styles.statLabel}>Total Socios</span>
-          </div>
-          <h2 style={styles.statValue}>{getTotalMembers()}</h2>
-        </div>
-
-        <div className="card" style={styles.statCard}>
-          <div style={styles.statHeader}>
-            <div style={{ ...styles.iconWrapper, backgroundColor: 'hsla(200, 90%, 50%, 0.1)', color: 'hsl(200, 90%, 50%)' }}>
-              <Users size={22} />
-            </div>
-            <span style={styles.statLabel}>Homens</span>
-          </div>
-          <h2 style={styles.statValue}>{loadingGenderCounts ? '—' : genderCounts.male}</h2>
-        </div>
-
-        <div className="card" style={styles.statCard}>
-          <div style={styles.statHeader}>
-            <div style={{ ...styles.iconWrapper, backgroundColor: 'hsla(330, 90%, 50%, 0.1)', color: 'hsl(330, 90%, 50%)' }}>
-              <Users size={22} />
-            </div>
-            <span style={styles.statLabel}>Mulheres</span>
-          </div>
-          <h2 style={styles.statValue}>{loadingGenderCounts ? '—' : genderCounts.female}</h2>
-        </div>
-
-      </div>
-
-      {/* Timeline Chart */}
-      {memberStats && memberStats.timeline && memberStats.timeline.length > 0 && (
-        <div className="card" style={styles.sectionCard}>
-          <h3 style={styles.sectionTitle}>Linha do Tempo - Últimos 12 Meses</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={memberStats.timeline} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis 
-                dataKey="month" 
-                tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                tickFormatter={(value) => {
-                  const [year, month] = value.split('-');
-                  const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-                  return `${monthNames[parseInt(month) - 1]}/${year.slice(2)}`;
-                }}
-              />
-              <YAxis tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--card))', 
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px',
-                }}
-                labelFormatter={(value) => {
-                  const [year, month] = String(value).split('-');
-                  const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-                  return `${monthNames[parseInt(month) - 1]} ${year}`;
-                }}
-              />
-              <Legend />
-              <Bar dataKey="saidas" name="Desligamentos" fill="rgb(239, 68, 68)" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="entradas" name="Entradas" fill="rgb(16, 185, 129)" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
 
       {/* Content Section: Status */}
       <div style={styles.contentGrid}>
