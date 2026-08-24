@@ -22,6 +22,7 @@ import {
   CartesianGrid,
   Tooltip,
   Legend,
+  ResponsiveContainer,
 } from 'recharts';
 import { membersApi } from '../../api/members';
 
@@ -218,7 +219,7 @@ export const Dashboard: React.FC = () => {
         <div style={styles.birthdayHeader}>
           <div style={styles.birthdayTitle}>
             <Gift size={20} style={{ color: 'hsl(var(--primary))' }} />
-            <span>Aniversariantes do Mês</span>
+            <span>Aniversariantes</span>
             {birthdays.length > 0 && (
               <button 
                 onClick={() => setShowBirthdays(!showBirthdays)}
@@ -344,38 +345,36 @@ export const Dashboard: React.FC = () => {
       {memberStats && memberStats.timeline && memberStats.timeline.length > 0 && (
         <div className="card" style={styles.sectionCard}>
           <h3 style={styles.sectionTitle}>Linha do Tempo - Últimos 12 Meses</h3>
-          <div style={{ overflowX: 'auto' }}>
-            <div style={{ width: `${Math.max(memberStats.timeline.length * 80, 600)}px`, height: '300px' }}>
-              <BarChart data={memberStats.timeline} width={Math.max(memberStats.timeline.length * 80, 600)} height={300} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis 
-                  dataKey="month" 
-                  tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                  tickFormatter={(value) => {
-                    const [year, month] = value.split('-');
-                    const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-                    return `${monthNames[parseInt(month) - 1]}/${year.slice(2)}`;
-                  }}
-                />
-                <YAxis tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                  }}
-                  labelFormatter={(value) => {
-                    const [year, month] = String(value).split('-');
-                    const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-                    return `${monthNames[parseInt(month) - 1]} ${year}`;
-                  }}
-                />
-                <Legend />
-                <Bar dataKey="saidas" name="Desligamentos" fill="rgb(239, 68, 68)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="entradas" name="Entradas" fill="rgb(16, 185, 129)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </div>
-          </div>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={memberStats.timeline} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis 
+                dataKey="month" 
+                tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                tickFormatter={(value) => {
+                  const [year, month] = value.split('-');
+                  const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+                  return `${monthNames[parseInt(month) - 1]}/${year.slice(2)}`;
+                }}
+              />
+              <YAxis tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }} />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--card))', 
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                }}
+                labelFormatter={(value) => {
+                  const [year, month] = String(value).split('-');
+                  const monthNames = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+                  return `${monthNames[parseInt(month) - 1]} ${year}`;
+                }}
+              />
+              <Legend />
+              <Bar dataKey="saidas" name="Desligamentos" fill="rgb(239, 68, 68)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="entradas" name="Entradas" fill="rgb(16, 185, 129)" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       )}
 
@@ -546,8 +545,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   birthdayHeader: {
     display: 'flex',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
     alignItems: 'center',
+    gap: '0.75rem',
     marginBottom: '1rem',
   },
   birthdayTitle: {
