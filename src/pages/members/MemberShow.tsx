@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { IMember } from '../../models';
 import { memberService } from '../../services/memberService';
 import { formatCPF, formatPhone, formatFullDate, formatBirthDateWithAge } from '../../utils/formatters';
 import { 
-  ArrowLeft, 
   Pencil, 
   User, 
   Calendar, 
@@ -57,12 +56,6 @@ export const MemberShow: React.FC = () => {
   if (!member) {
     return (
       <div style={styles.container}>
-        <div style={styles.header}>
-          <Link to="/members" style={styles.backLink}>
-            <ArrowLeft size={16} />
-            <span>Voltar para busca</span>
-          </Link>
-        </div>
         <div className="card" style={styles.emptyContainer}>
           <ShieldAlert size={48} style={{ color: 'hsl(var(--destructive))', marginBottom: '1rem' }} />
           <h3 style={{ fontWeight: 600 }}>Socio não encontrado</h3>
@@ -74,14 +67,6 @@ export const MemberShow: React.FC = () => {
 
   return (
     <div style={styles.container}>
-      {/* Header */}
-      <div style={styles.header}>
-        <Link to="/members" style={styles.backLink}>
-          <ArrowLeft size={16} />
-          <span>Voltar para busca</span>
-        </Link>
-      </div>
-
       {/* Profile summary card */}
       <div className="card" style={styles.profileSummaryCard}>
         <div style={styles.summaryInfo}>
@@ -324,14 +309,6 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  backLink: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    fontSize: '0.875rem',
-    fontWeight: 500,
-    color: 'hsl(var(--muted-foreground))',
   },
   actionGroup: {
     display: 'flex',

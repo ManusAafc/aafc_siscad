@@ -35,7 +35,7 @@ export const dashboardService = {
 
   async getMemberStatsByPlan(): Promise<any[]> {
     try {
-      const response = await apiClient.get('/v_members?status_id=eq.2&select=plan_id');
+      const response = await apiClient.get('/v_members?status_id=eq.2&is_deleted=eq.false&select=plan_id');
       const members = response.data || [];
       const planCounts: Record<number, number> = {};
       members.forEach((m: any) => {
@@ -68,7 +68,7 @@ export const dashboardService = {
 
   async getMemberTotalCount(): Promise<number> {
     try {
-      const response = await apiClient.get('/v_members?status_id=eq.2&select=id');
+      const response = await apiClient.get('/v_members?status_id=eq.2&is_deleted=eq.false&select=id');
       return response.data?.length || 0;
     } catch (error) {
       console.error('Ao contar membros:', error);
@@ -86,8 +86,8 @@ export const dashboardService = {
       }
 
       const [activeRes, inactiveRes] = await Promise.all([
-        apiClient.get('/v_members?status_id=eq.2&select=date_aafc_start'),
-        apiClient.get('/v_members?status_id=eq.1&select=date_aafc_end'),
+        apiClient.get('/v_members?status_id=eq.2&is_deleted=eq.false&select=date_aafc_start'),
+        apiClient.get('/v_members?status_id=eq.1&is_deleted=eq.false&select=date_aafc_end'),
       ]);
 
       const entradasPorMes: Record<string, number> = {};

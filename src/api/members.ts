@@ -4,7 +4,7 @@ import { IMember, IUserMembersFilters } from '../models';
 export const membersApi = {
   async getAll(limit = 10000, offset = 0) {
     const response = await apiClient.get<IMember[]>(
-      `/v_members?select=*&limit=${limit}&offset=${offset}`
+      `/v_members?is_deleted=eq.false&select=*&limit=${limit}&offset=${offset}`
     );
     return response.data;
   },
@@ -18,14 +18,14 @@ export const membersApi = {
 
   async getByStatusIdAndRegionId(statusId: number, regionId: number) {
     const response = await apiClient.get<IMember[]>(
-      `/v_members?status_id=eq.${statusId}&region_id=eq.${regionId}&select=*`
+      `/v_members?status_id=eq.${statusId}&region_id=eq.${regionId}&is_deleted=eq.false&select=*`
     );
     return response.data;
   },
 
   async getByStatusIdAndCityId(statusId: number, cityId: number) {
     const response = await apiClient.get<IMember[]>(
-      `/v_members?status_id=eq.${statusId}&city_id=eq.${cityId}&select=*`
+      `/v_members?status_id=eq.${statusId}&city_id=eq.${cityId}&is_deleted=eq.false&select=*`
     );
     return response.data;
   },
@@ -106,7 +106,7 @@ export const membersApi = {
 
   async getBirthdaysByMonth(month: number, statusId = 2, limit = 50) {
     const response = await apiClient.get<IMember[]>(
-      `/v_members?status_id=eq.${statusId}&select=id,name,birthday,img_path,img_name,plan_description,region_description&limit=${limit}`
+      `/v_members?status_id=eq.${statusId}&is_deleted=eq.false&select=id,name,birthday,img_path,img_name,plan_description,region_description&limit=${limit}`
     );
     const members = response.data || [];
     return members.filter((m: any) => {
@@ -118,12 +118,12 @@ export const membersApi = {
 
   async getGenderCounts(statusId = 2) {
     const [maleRes, femaleRes] = await Promise.all([
-      apiClient.get(`/v_members?status_id=eq.${statusId}&gender_id=eq.1&select=id`, { params: { limit: 1 } }),
-      apiClient.get(`/v_members?status_id=eq.${statusId}&gender_id=eq.2&select=id`, { params: { limit: 1 } }),
+      apiClient.get(`/v_members?status_id=eq.${statusId}&gender_id=eq.1&is_deleted=eq.false&select=id`, { params: { limit: 1 } }),
+      apiClient.get(`/v_members?status_id=eq.${statusId}&gender_id=eq.2&is_deleted=eq.false&select=id`, { params: { limit: 1 } }),
     ]);
     // Use count from headers or fetch count separately
-    const maleCountRes = await apiClient.get(`/v_members?status_id=eq.${statusId}&gender_id=eq.1&select=id`, { params: { limit: 10000 } });
-    const femaleCountRes = await apiClient.get(`/v_members?status_id=eq.${statusId}&gender_id=eq.2&select=id`, { params: { limit: 10000 } });
+    const maleCountRes = await apiClient.get(`/v_members?status_id=eq.${statusId}&gender_id=eq.1&is_deleted=eq.false&select=id`, { params: { limit: 10000 } });
+    const femaleCountRes = await apiClient.get(`/v_members?status_id=eq.${statusId}&gender_id=eq.2&is_deleted=eq.false&select=id`, { params: { limit: 10000 } });
     return {
       male: maleCountRes.data?.length || 0,
       female: femaleCountRes.data?.length || 0,

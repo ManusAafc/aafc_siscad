@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { IMember, IPlan, ICity, IGender, IMemberStatus } from '../../models';
 import { memberService } from '../../services/memberService';
 import { planService } from '../../services/planService';
@@ -7,7 +7,7 @@ import { genderService } from '../../services/genderService';
 import { statusService } from '../../services/statusService';
 import { dispatchLoadingStart, dispatchLoadingEnd } from '../../components/common/ButtonLoading';
 import { cityService } from '../../services/cityService';
-import { ArrowLeft, Save, UserPlus, Calendar } from 'lucide-react';
+import { Save, UserPlus, Calendar } from 'lucide-react';
 import { formatCEP, formatMobile, formatCPF } from '../../utils/formatters';
 
 function isValidDate(dd: string, mm: string, yyyy: string): boolean {
@@ -350,10 +350,6 @@ export const MemberCU: React.FC = () => {
     <div style={styles.container}>
       {/* Header */}
       <div style={styles.header}>
-        <Link to={isEditing ? `/members/${id}` : '/members'} style={styles.backLink}>
-          <ArrowLeft size={16} />
-          <span>Cancelar</span>
-        </Link>
         <h1 style={styles.title}>{isEditing ? 'Editar Socio' : 'Novo Socio'}</h1>
       </div>
 
@@ -576,18 +572,9 @@ export const MemberCU: React.FC = () => {
         {/* Submit */}
         <div style={styles.actionsContainer}>
           <button 
-            type="button" 
-            onClick={() => navigate(isEditing ? `/members/${id}` : '/members')} 
-            className="btn"
-            style={{ flex: 1, backgroundColor: 'hsl(var(--destructive))', color: 'hsl(var(--destructive-foreground))' }}
-          >
-            Cancelar
-          </button>
-          
-          <button 
             type="submit" 
             className="btn btn-primary"
-            style={{ flex: 2 }}
+            style={{ width: '100%' }}
             disabled={isSaving}
           >
             {isSaving ? (
@@ -622,14 +609,6 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     alignItems: 'center',
     gap: '1.5rem',
-  },
-  backLink: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '0.5rem',
-    fontSize: '0.875rem',
-    fontWeight: 500,
-    color: 'hsl(var(--muted-foreground))',
   },
   title: {
     fontSize: '1.5rem',

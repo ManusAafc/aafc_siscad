@@ -1,12 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/useAuthStore';
-import { LogOut, Settings, ChevronDown, User as UserIcon, User as UserIcon2 } from 'lucide-react';
+import { LogOut, Settings, ChevronDown, ChevronLeft, User as UserIcon, User as UserIcon2 } from 'lucide-react';
 import { dispatchLoadingStart, dispatchLoadingEnd } from '../common/ButtonLoading';
 import aafcLogo from '../../assets/aafc_logo.jpg';
 
 interface HeaderProps {
 }
+
+const EDIT_CREATE_ROUTES = [
+  '/members/new',
+  '/meetings/new',
+];
+
+const EDIT_ROUTE_REGEX = /\/members\/[^/]+\/edit|\/meetings\/[^/]+\/edit|\/meetings\/[^/]+\/add-member/;
 
 export const Header: React.FC = () => {
   const location = useLocation();
@@ -15,8 +22,15 @@ export const Header: React.FC = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
 
+  const isEditOrCreate = EDIT_CREATE_ROUTES.some(r => location.pathname === r) || EDIT_ROUTE_REGEX.test(location.pathname);
+  const isHome = location.pathname === '/';
+
   const handleLogoClick = () => {
     navigate('/');
+  };
+
+  const handleBack = () => {
+    navigate(-1);
   };
 
   const handleLogout = async () => {
@@ -45,6 +59,15 @@ export const Header: React.FC = () => {
         >
           <img src={aafcLogo} alt="AAFCorsan" style={styles.logoImage} />
         </button>
+        {!isEditOrCreate && !isHome && (
+          <button
+            onClick={handleBack}
+            style={styles.navButton}
+            aria-label="Voltar"
+          >
+            <ChevronLeft size={18} />
+          </button>
+        )}
       </div>
 
       <div style={styles.rightSection}>
@@ -112,7 +135,20 @@ const styles: Record<string, React.CSSProperties> = {
   leftSection: {
     display: 'flex',
     alignItems: 'center',
-    gap: '0.75rem',
+    gap: '0.25rem',
+  },
+  navButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '32px',
+    height: '32px',
+    borderRadius: '8px',
+    backgroundColor: 'transparent',
+    color: 'hsl(var(--muted-foreground))',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
   },
   logoButton: {
     display: 'flex',

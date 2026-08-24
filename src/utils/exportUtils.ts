@@ -4,8 +4,9 @@ import * as XLSX from 'xlsx';
 import { IMember } from '../models';
 import { formatCPF, formatPhone } from './formatters';
 import { addPDFHeader, addPDFFooter } from './pdfHeader';
+import { saveFileOnDevice } from './capacitor';
 
-export const exportMembersToPDF = (members: IMember[], title: string = 'Relatório de Membros') => {
+export const exportMembersToPDF = async (members: IMember[], title: string = 'Relatório de Membros') => {
   const doc = new jsPDF('landscape');
   
   // Cabeçalho com título e logo
@@ -55,7 +56,8 @@ export const exportMembersToPDF = (members: IMember[], title: string = 'Relatór
 
   addPDFFooter(doc, members.length);
 
-  doc.save(`membros_${new Date().getTime()}.pdf`);
+  const blob = new Blob([doc.output('arraybuffer')], { type: 'application/pdf' });
+  await saveFileOnDevice(blob, `membros_${new Date().getTime()}.pdf`);
 };
 
 // ── Etiquetas Carta 6181 (Pimaco) ────────────────────────────────────────────
@@ -84,7 +86,7 @@ const getMemberAddressFields = (m: IMember) => {
   };
 };
 
-export const exportMembersToLabels = (members: IMember[]) => {
+export const exportMembersToLabels = async (members: IMember[]) => {
   const doc = new jsPDF({ unit: 'mm', format: 'letter', orientation: 'portrait' });
 
   members.forEach((m, index) => {
@@ -117,10 +119,11 @@ export const exportMembersToLabels = (members: IMember[]) => {
     if (zipCode) doc.text(`CEP: ${zipCode}`, x + 2, y + 20);
   });
 
-  doc.save(`etiquetas_${new Date().getTime()}.pdf`);
+  const blob = new Blob([doc.output('arraybuffer')], { type: 'application/pdf' });
+  await saveFileOnDevice(blob, `etiquetas_${new Date().getTime()}.pdf`);
 };
 
-export const exportMembersToExcel = (members: IMember[], title: string = 'Membros') => {
+export const exportMembersToExcel = async (members: IMember[], title: string = 'Membros') => {
   const data = members.map((m) => {
     const member = m as any;
     const city = member.cityDescription || member.cityName || member.city_description || member.city_name || member.db_member_city_description || member.db_city_description || member.city || '';
@@ -142,5 +145,7 @@ export const exportMembersToExcel = (members: IMember[], title: string = 'Membro
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Membros");
   
-  XLSX.writeFile(workbook, `membros_${new Date().getTime()}.xlsx`);
+  const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  await saveFileOnDevice(blob, `membros_${new Date().getTime()}.xlsx`);
 };
