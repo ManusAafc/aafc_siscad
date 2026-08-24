@@ -103,4 +103,30 @@ export const membersApi = {
     const response = await apiClient.delete(`/members?id=eq.${id}`);
     return response.data;
   },
+
+  async getBirthdaysByMonth(month: number, statusId = 2, limit = 50) {
+    const response = await apiClient.get<IMember[]>(
+      `/v_members?status_id=eq.${statusId}&select=id,name,birthday,img_path,img_name,plan_description,region_description&limit=${limit}`
+    );
+    const members = response.data || [];
+    return members.filter((m: any) => {
+      if (!m.birthday) return false;
+      const bdayMonth = new Date(m.birthday).getMonth() + 1;
+      return bdayMonth === month;
+    });
+  },
+
+  async getGenderCounts(statusId = 2) {
+    const [maleRes, femaleRes] = await Promise.all([
+      apiClient.get(`/v_members?status_id=eq.${statusId}&gender_id=eq.1&select=id`, { params: { limit: 1 } }),
+      apiClient.get(`/v_members?status_id=eq.${statusId}&gender_id=eq.2&select=id`, { params: { limit: 1 } }),
+    ]);
+    // Use count from headers or fetch count separately
+    const maleCountRes = await apiClient.get(`/v_members?status_id=eq.${statusId}&gender_id=eq.1&select=id`, { params: { limit: 10000 } });
+    const femaleCountRes = await apiClient.get(`/v_members?status_id=eq.${statusId}&gender_id=eq.2&select=id`, { params: { limit: 10000 } });
+    return {
+      male: maleCountRes.data?.length || 0,
+      female: femaleCountRes.data?.length || 0,
+    };
+  },
 };
