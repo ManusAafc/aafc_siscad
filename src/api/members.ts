@@ -117,16 +117,18 @@ export const membersApi = {
   },
 
   async getGenderCounts(statusId = 2) {
-    const [maleRes, femaleRes] = await Promise.all([
-      apiClient.get(`/v_members?status_id=eq.${statusId}&gender_id=eq.1&select=id`, { params: { limit: 1 } }),
-      apiClient.get(`/v_members?status_id=eq.${statusId}&gender_id=eq.2&select=id`, { params: { limit: 1 } }),
-    ]);
-    // Use count from headers or fetch count separately
-    const maleCountRes = await apiClient.get(`/v_members?status_id=eq.${statusId}&gender_id=eq.1&select=id`, { params: { limit: 10000 } });
-    const femaleCountRes = await apiClient.get(`/v_members?status_id=eq.${statusId}&gender_id=eq.2&select=id`, { params: { limit: 10000 } });
-    return {
-      male: maleCountRes.data?.length || 0,
-      female: femaleCountRes.data?.length || 0,
-    };
+    const response = await apiClient.get<IMember[]>(
+      `/v_members?status_id=eq.${statusId}&select=gender_id,gender_code,gender`
+    );
+    const members = response.data || [];
+    let male = 0;
+    let female = 0;
+    members.forEach((m: any) => {
+      const gender = (m.gender || m.genderCode || m.gender_code || '').toUpperCase();
+      const id = m.genderId ?? m.gender_id;
+      if (gender === 'M' || gender === 'MASCULINO' || gender.includes('MASC') || id === 1) male++;
+      else if (gender === 'F' || gender === 'FEMININO' || gender.includes('FEM') || id === 2) female++;
+    });
+    return { male, female };
   },
 };
