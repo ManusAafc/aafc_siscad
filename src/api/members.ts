@@ -118,9 +118,13 @@ export const membersApi = {
 
   async getGenderCounts(statusId = 2) {
     const response = await apiClient.get<IMember[]>(
-      `/v_members?status_id=eq.${statusId}&select=gender_id,gender_code,gender`
+      `/v_members?status_id=eq.${statusId}&select=*`
     );
     const members = response.data || [];
+    if (members.length > 0) {
+      console.log('[getGenderCounts] Sample member keys:', Object.keys(members[0]));
+      console.log('[getGenderCounts] Sample member:', JSON.stringify(members[0], null, 2));
+    }
     let male = 0;
     let female = 0;
     members.forEach((m: any) => {
@@ -129,6 +133,7 @@ export const membersApi = {
       if (gender === 'M' || gender === 'MASCULINO' || gender.includes('MASC') || id === 1) male++;
       else if (gender === 'F' || gender === 'FEMININO' || gender.includes('FEM') || id === 2) female++;
     });
+    console.log('[getGenderCounts] male:', male, 'female:', female);
     return { male, female };
   },
 };
