@@ -4,10 +4,12 @@ import { useMemberStore } from '../../store/useMemberStore';
 import { formatCPF } from '../../utils/formatters';
 import { meetingMemberService } from '../../services/meetingMemberService';
 import { ArrowLeft, Search, UserPlus, User, RefreshCw } from 'lucide-react';
+import { useToastStore } from '../../store/useToastStore';
 
 export const MeetingMemberAdd: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const addToast = useToastStore((s) => s.addToast);
   const [searchTerm, setSearchTerm] = useState('');
   const [isAdding, setIsAdding] = useState<string | null>(null);
 
@@ -32,10 +34,10 @@ export const MeetingMemberAdd: React.FC = () => {
     setIsAdding(memberId);
     try {
       await meetingMemberService.addMemberToMeeting(id, memberId);
-      alert('Socio adicionado à reunião com sucesso!');
+      addToast('Socio adicionado à reunião com sucesso!', 'success');
       navigate(`/meetings/${id}`);
     } catch (error) {
-      alert('Não foi possível adicionar o socio à reunião.');
+      addToast('Não foi possível adicionar o socio à reunião.', 'error');
     }
     setIsAdding(null);
   };

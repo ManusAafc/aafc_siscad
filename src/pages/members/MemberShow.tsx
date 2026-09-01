@@ -67,6 +67,14 @@ export const MemberShow: React.FC = () => {
 
   return (
     <div style={styles.container}>
+      {/* Header with Edit button */}
+      <div style={styles.header}>
+        <button onClick={() => navigate(`/members/${id}/edit`)} className="btn btn-primary" style={styles.editBtn}>
+          <Pencil size={16} />
+          <span>Editar</span>
+        </button>
+      </div>
+
       {/* Profile summary card */}
       <div className="card" style={styles.profileSummaryCard}>
         <div style={styles.summaryInfo}>
@@ -280,14 +288,6 @@ export const MemberShow: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Footer with Edit button */}
-      <div style={styles.footer}>
-        <button onClick={() => navigate(`/members/${id}/edit`)} className="btn btn-primary" style={styles.footerBtn}>
-          <Pencil size={16} />
-          <span>Editar</span>
-        </button>
-      </div>
     </div>
   );
 };
@@ -307,8 +307,13 @@ const styles: Record<string, React.CSSProperties> = {
   },
   header: {
     display: 'flex',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
+  },
+  editBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.5rem',
   },
   actionGroup: {
     display: 'flex',
@@ -433,12 +438,4 @@ const styles: Record<string, React.CSSProperties> = {
     padding: '1.75rem',
     boxShadow: 'var(--shadow-lg)',
   },
-  footer: {
-    marginTop: 'auto',
-    paddingTop: '1.5rem',
-    borderTop: '1px solid hsl(var(--border))',
-  },
-  footerBtn: {
-    width: '100%',
-  }
 };

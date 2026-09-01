@@ -40,7 +40,7 @@ export const SignIn: React.FC = () => {
         <div style={styles.header}>
           <img src={aafcLogo} alt="AAFC Logo" style={styles.logo} />
           <h1 style={styles.title}>Manus Siscad</h1>
-          <p style={styles.subtitle}>Faça login para continuar na AAFC</p>
+          <p style={styles.subtitle}>Entre com as suas credenciais</p>
         </div>
 
         {error && (
@@ -112,12 +112,7 @@ export const SignIn: React.FC = () => {
           </ButtonLoading>
         </form>
 
-        <div style={styles.footer}>
-          <span>Não tem uma conta? </span>
-          <Link to="/register" style={{ fontWeight: 600 }}>
-            Criar conta
-          </Link>
-        </div>
+
       </div>
     </div>
   );

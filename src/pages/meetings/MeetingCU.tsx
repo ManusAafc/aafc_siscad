@@ -4,11 +4,13 @@ import { IMeeting, IMeetingCity, IMeetingPlan } from '../../models';
 import { meetingService } from '../../services/meetingService';
 import { ArrowLeft, Save, CalendarPlus } from 'lucide-react';
 import { dispatchLoadingStart, dispatchLoadingEnd } from '../../components/common/ButtonLoading';
+import { useToastStore } from '../../store/useToastStore';
 
 export const MeetingCU: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isEditing = !!id;
+  const addToast = useToastStore((s) => s.addToast);
 
   const [formData, setFormData] = useState<Partial<IMeeting>>({
     title: '',
@@ -50,7 +52,7 @@ export const MeetingCU: React.FC = () => {
         }
       }
     } catch (error) {
-      alert('Não foi possível carregar os dados cadastrais.');
+      addToast('Não foi possível carregar os dados cadastrais.', 'error');
     }
     setIsLoading(false);
   };
@@ -88,15 +90,15 @@ export const MeetingCU: React.FC = () => {
     try {
       if (isEditing && id) {
         await meetingService.updateMeeting(id, formData);
-        alert('Reunião atualizada com sucesso!');
+        addToast('Reunião atualizada com sucesso!', 'success');
         navigate(`/meetings/${id}`);
       } else {
         await meetingService.createMeeting(formData);
-        alert('Reunião criada com sucesso!');
+        addToast('Reunião criada com sucesso!', 'success');
         navigate('/meetings');
       }
     } catch (error) {
-      alert('Não foi possível salvar a reunião.');
+      addToast('Não foi possível salvar a reunião.', 'error');
     }
     setIsSaving(false);
     dispatchLoadingEnd();

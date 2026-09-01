@@ -7,3 +7,4 @@ export * from './gender';
 export * from './user';
 export * from './app';
 export * from './filters';
+export * from './log';

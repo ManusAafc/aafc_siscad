@@ -16,6 +16,15 @@ interface MeetingState {
   isLoading: boolean;
 
   searchMeetings: (searchTerm: string, limit?: number, offset?: number) => Promise<void>;
+  searchMeetingsWithFilters: (params: {
+    searchTerms?: string;
+    typeIdsList?: number[];
+    statusesIdsList?: number[];
+    regionsIdsList?: number[];
+    citiesIdsList?: number[];
+    limit?: number;
+    offset?: number;
+  }) => Promise<void>;
   getMeetingById: (id: string) => Promise<IMeeting | null>;
   createMeeting: (meeting: Partial<IMeeting>) => Promise<IMeeting | null>;
   updateMeeting: (id: string, meeting: Partial<IMeeting>) => Promise<IMeeting | null>;
@@ -52,6 +61,20 @@ export const useMeetingStore = create<MeetingState>((set) => ({
     set({ isLoading: true });
     try {
       const result = await meetingService.searchMeetings(searchTerm, limit, offset);
+      set({
+        searchResults: result.data,
+        searchTotal: result.total,
+        isLoading: false,
+      });
+    } catch (error) {
+      set({ isLoading: false });
+    }
+  },
+
+  searchMeetingsWithFilters: async (params) => {
+    set({ isLoading: true });
+    try {
+      const result = await meetingService.searchMeetingsWithFilters(params);
       set({
         searchResults: result.data,
         searchTotal: result.total,

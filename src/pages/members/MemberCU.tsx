@@ -8,7 +8,9 @@ import { statusService } from '../../services/statusService';
 import { dispatchLoadingStart, dispatchLoadingEnd } from '../../components/common/ButtonLoading';
 import { cityService } from '../../services/cityService';
 import { Save, UserPlus, Calendar } from 'lucide-react';
+import { useToastStore } from '../../store/useToastStore';
 import { formatCEP, formatMobile, formatCPF } from '../../utils/formatters';
+import { validateCPF } from '../../utils/validators';
 
 function isValidDate(dd: string, mm: string, yyyy: string): boolean {
   const day = parseInt(dd, 10);
@@ -143,6 +145,7 @@ export const MemberCU: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isEditing = !!id;
+  const addToast = useToastStore((s) => s.addToast);
 
   const [formData, setFormData] = useState<Partial<IMember>>({
     name: '',
@@ -169,6 +172,7 @@ export const MemberCU: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [originalFormData, setOriginalFormData] = useState<Partial<IMember> | null>(null);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -218,10 +222,28 @@ export const MemberCU: React.FC = () => {
             dateAafcEnd: isoToDateInput(member.dateAafcEnd),
             statusReasonDescription: member.statusReasonDescription || '',
           });
+          // Salva copia dos dados originais para comparacao posterior
+          setOriginalFormData({
+            name: member.name || '',
+            cpf: member.cpfMask || member.cpf || '',
+            birthDate: birthDateFormatted,
+            gender: genderValue,
+            mobile: member.mobileMask || member.mobile || '',
+            email: member.email || '',
+            address: member.address || '',
+            neighborhood: member.neighborhood || '',
+            zipCode: member.zipCodeMask || member.zipCode || '',
+            cityId: member.cityId,
+            planId: member.planId,
+            status: statusId,
+            dateAafcStart: isoToDateInput(member.dateAafcStart),
+            dateAafcEnd: isoToDateInput(member.dateAafcEnd),
+            statusReasonDescription: member.statusReasonDescription || '',
+          });
         }
       }
     } catch (error) {
-      alert('Não foi possível carregar os dados cadastrais.');
+      addToast('Não foi possível carregar os dados cadastrais.', 'error');
     }
     setIsLoading(false);
   };
@@ -265,8 +287,13 @@ export const MemberCU: React.FC = () => {
       newErrors.name = 'Nome é obrigatório';
     }
 
-    if (formData.cpf && !/^\d{11}$/.test(formData.cpf.replace(/\D/g, ''))) {
-      newErrors.cpf = 'CPF deve conter 11 dígitos';
+    if (formData.cpf) {
+      const cpfDigits = formData.cpf.replace(/\D/g, '');
+      if (cpfDigits.length !== 11) {
+        newErrors.cpf = 'CPF deve conter 11 dígitos';
+      } else if (!validateCPF(cpfDigits)) {
+        newErrors.cpf = 'CPF inválido';
+      }
     }
 
     if (formData.mobile && !/^\d{10,11}$/.test(formData.mobile.replace(/\D/g, ''))) {
@@ -287,6 +314,22 @@ export const MemberCU: React.FC = () => {
       return;
     }
 
+    // Verifica se houve alteracoes nos dados (edicao)
+    if (isEditing && originalFormData) {
+      const hasChanges = Object.keys(formData).some((key) => {
+        const k = key as keyof IMember;
+        const current = formData[k];
+        const original = originalFormData[k];
+        return String(current ?? '') !== String(original ?? '');
+      });
+
+      if (!hasChanges) {
+        addToast('Nenhuma alteração detectada.', 'info');
+        navigate(`/members/${id}`);
+        return;
+      }
+    }
+
     // Prepara dados para envio ao banco (mapeia campos do formulario para colunas da tabela)
     const cpfNumbers = (formData.cpf || '').replace(/\D/g, '');
     const mobileNumbers = (formData.mobile || '').replace(/\D/g, '');
@@ -297,26 +340,40 @@ export const MemberCU: React.FC = () => {
       ? `${mobileDDI.substring(0, 4)}${mobileDDI.substring(5)}@s.whatsapp.net` 
       : '';
 
+    // Mapeia gender (texto) para gender_id
+    let genderId: number | undefined;
+    if (formData.gender) {
+      const found = genders.find((g) => g.description === formData.gender);
+      genderId = found?.id;
+    }
+
+    // Mapeia status (texto/numero do formulario) para status_id
+    const statusId = formData.status ? Number(formData.status) : undefined;
+
     const submitData = {
-      ...formData,
-      // CPF
-      cpf_mask: formData.cpf,
+      // Dados pessoais
+      name: formData.name || undefined,
       cpf: cpfNumbers || undefined,
-      // Celular
-      mobile_mask: formData.mobile,
+      cpf_mask: formData.cpf || undefined,
+      birthday: formData.birthDate || undefined,
+      gender_id: genderId || undefined,
+      // Contato
       mobile: mobileNumbers || undefined,
+      mobile_mask: formData.mobile || undefined,
       mobile_ddi: mobileDDI || undefined,
       whatsapp_id: whatsappId || undefined,
-      // CEP
-      zip_code_mask: formData.zipCode,
+      email: formData.email || undefined,
+      // Endereco
+      address: formData.address || undefined,
+      neighborhood: formData.neighborhood || undefined,
       zip_code: zipNumbers || undefined,
-      // Datas
+      zip_code_mask: formData.zipCode || undefined,
+      city_id: formData.cityId || undefined,
+      // Dados da AAFC
+      plan_id: formData.planId || undefined,
+      status_id: statusId || undefined,
       date_aafc_start: formData.dateAafcStart ? dateInputToIso(formData.dateAafcStart) : undefined,
       date_aafc_end: formData.dateAafcEnd ? dateInputToIso(formData.dateAafcEnd) : undefined,
-      // Remove campos auxiliares do formulario
-      zipCode: undefined,
-      dateAafcStart: undefined,
-      dateAafcEnd: undefined,
     };
 
     setIsSaving(true);
@@ -324,14 +381,15 @@ export const MemberCU: React.FC = () => {
     try {
       if (isEditing && id) {
         await memberService.updateMember(id, submitData);
-        alert('Socio atualizado com sucesso!');
+        addToast('Socio atualizado com sucesso!', 'success');
+        navigate(`/members/${id}`);
       } else {
         await memberService.createMember(submitData);
-        alert('Socio criado com sucesso!');
+        addToast('Socio criado com sucesso!', 'success');
+        navigate('/members');
       }
-      navigate('/members');
     } catch (error) {
-      alert('Não foi possível salvar o socio.');
+      addToast('Não foi possível salvar o socio.', 'error');
     }
     setIsSaving(false);
     dispatchLoadingEnd();
@@ -377,10 +435,21 @@ export const MemberCU: React.FC = () => {
               id="cpf"
               type="tel"
               inputMode="numeric"
-              pattern="[0-9]*"
               className="input-control"
               value={formData.cpf || ''}
               onChange={(e) => handleChange('cpf', e.target.value.replace(/\D/g, ''))}
+              onBlur={() => {
+                const cpfDigits = (formData.cpf || '').replace(/\D/g, '');
+                if (cpfDigits.length === 0) {
+                  setErrors((prev) => { const { cpf, ...rest } = prev; return rest; });
+                } else if (cpfDigits.length !== 11) {
+                  setErrors((prev) => ({ ...prev, cpf: 'CPF deve conter 11 dígitos' }));
+                } else if (!validateCPF(cpfDigits)) {
+                  setErrors((prev) => ({ ...prev, cpf: 'CPF inválido' }));
+                } else {
+                  setErrors((prev) => { const { cpf, ...rest } = prev; return rest; });
+                }
+              }}
               placeholder="000.000.000-00"
               maxLength={14}
             />
@@ -421,7 +490,6 @@ export const MemberCU: React.FC = () => {
               id="mobile"
               type="tel"
               inputMode="numeric"
-              pattern="[0-9]*"
               className="input-control"
               value={formData.mobile || ''}
               onChange={(e) => handleChange('mobile', e.target.value.replace(/\D/g, ''))}
@@ -477,7 +545,6 @@ export const MemberCU: React.FC = () => {
               id="zipCode"
               type="tel"
               inputMode="numeric"
-              pattern="[0-9]*"
               className="input-control"
               value={formData.zipCode || ''}
               onChange={(e) => handleChange('zipCode', e.target.value.replace(/\D/g, ''))}

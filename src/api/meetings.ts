@@ -25,6 +25,44 @@ export const meetingsApi = {
     return response.data;
   },
 
+  async searchWithFilters(params: {
+    searchTerms?: string;
+    typeIdsList?: number[];
+    statusesIdsList?: number[];
+    regionsIdsList?: number[];
+    citiesIdsList?: number[];
+    recordsByPage?: number;
+    pageCurrentId?: number;
+  }) {
+    const response = await apiClient.post('/rpc/fc_meetings_search_filters', {
+      search_terms: params.searchTerms || '',
+      types_ids: params.typeIdsList || [],
+      statuses_ids: params.statusesIdsList || [],
+      regions_ids: params.regionsIdsList || [],
+      cities_ids: params.citiesIdsList || [],
+      records_by_page: params.recordsByPage || 10,
+      page_current_id: params.pageCurrentId || 0,
+    });
+    return response.data;
+  },
+
+  async searchWithFiltersTotal(params: {
+    searchTerms?: string;
+    typeIdsList?: number[];
+    statusesIdsList?: number[];
+    regionsIdsList?: number[];
+    citiesIdsList?: number[];
+  }) {
+    const response = await apiClient.post('/rpc/fc_meetings_search_filters_count', {
+      search_terms: params.searchTerms || '',
+      types_ids: params.typeIdsList || [],
+      statuses_ids: params.statusesIdsList || [],
+      regions_ids: params.regionsIdsList || [],
+      cities_ids: params.citiesIdsList || [],
+    });
+    return response.data;
+  },
+
   async create(meeting: Partial<IMeeting>) {
     const response = await apiClient.post('/meetings', meeting);
     return response.data;

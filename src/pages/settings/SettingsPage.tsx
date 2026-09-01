@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Settings, Shield, Database, Bell, Info } from 'lucide-react';
+import { Settings, Shield, Database, Bell, Info, History } from 'lucide-react';
 import { ProfilesPage } from './ProfilesPage';
+import { LogsSearch } from '../logs/LogsSearch';
 
-type Tab = 'overview' | 'profiles';
+type Tab = 'overview' | 'profiles' | 'logs';
 
 export const SettingsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('overview');
@@ -10,6 +11,7 @@ export const SettingsPage: React.FC = () => {
   const tabs: { key: Tab; label: string; icon: React.FC<any> }[] = [
     { key: 'overview', label: 'Visão Geral', icon: Info },
     { key: 'profiles', label: 'Perfis & Permissões', icon: Shield },
+    { key: 'logs', label: 'Auditoria', icon: History },
   ];
 
   return (
@@ -48,19 +50,21 @@ export const SettingsPage: React.FC = () => {
 
       {/* Tab Content */}
       <div style={styles.content}>
-        {activeTab === 'overview' && <OverviewTab />}
+        {activeTab === 'overview' && <OverviewTab onNavigate={setActiveTab} />}
         {activeTab === 'profiles' && <ProfilesPage />}
+        {activeTab === 'logs' && <LogsSearch />}
       </div>
     </div>
   );
 };
 
 // ─── Aba: Visão Geral ──────────────────────────────────────────────────────────
-const OverviewTab: React.FC = () => (
+const OverviewTab: React.FC<{ onNavigate: (tab: Tab) => void }> = ({ onNavigate }) => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
     <div style={overviewGrid}>
       {[
-        { icon: Shield, label: 'Perfis & Permissões', desc: 'Gerencie perfis de acesso e permissões por módulo.', tab: 'profiles' },
+        { icon: Shield, label: 'Perfis & Permissões', desc: 'Gerencie perfis de acesso e permissões por módulo.', tab: 'profiles' as Tab },
+        { icon: History, label: 'Auditoria', desc: 'Visualize o histórico de alterações realizadas no sistema.', tab: 'logs' as Tab },
         { icon: Database, label: 'Banco de Dados', desc: 'Visualize tabelas e integridade dos dados.', tab: null },
         { icon: Bell, label: 'Notificações', desc: 'Configure alertas e e-mails automáticos.', tab: null },
       ].map(({ icon: Icon, label, desc, tab }) => (
@@ -70,7 +74,12 @@ const OverviewTab: React.FC = () => (
           </div>
           <h3 style={{ fontSize: '0.95rem', fontWeight: 600 }}>{label}</h3>
           <p style={{ fontSize: '0.85rem', color: 'hsl(var(--muted-foreground))', flex: 1 }}>{desc}</p>
-          <button className="btn btn-secondary" style={{ alignSelf: 'flex-start', fontSize: '0.8rem', padding: '0.45rem 0.9rem' }} disabled={!tab}>
+          <button
+            className="btn btn-secondary"
+            style={{ alignSelf: 'flex-start', fontSize: '0.8rem', padding: '0.45rem 0.9rem' }}
+            disabled={!tab}
+            onClick={() => tab && onNavigate(tab)}
+          >
             {tab ? 'Acessar' : 'Em breve'}
           </button>
         </div>

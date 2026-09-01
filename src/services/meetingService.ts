@@ -36,6 +36,41 @@ export const meetingService = {
     }
   },
 
+  async searchMeetingsWithFilters(params: {
+    searchTerms?: string;
+    typeIdsList?: number[];
+    statusesIdsList?: number[];
+    regionsIdsList?: number[];
+    citiesIdsList?: number[];
+    limit?: number;
+    offset?: number;
+  }): Promise<{ data: IMeeting[]; total: number }> {
+    try {
+      const [data, total] = await Promise.all([
+        meetingsApi.searchWithFilters({
+          searchTerms: params.searchTerms,
+          typeIdsList: params.typeIdsList,
+          statusesIdsList: params.statusesIdsList,
+          regionsIdsList: params.regionsIdsList,
+          citiesIdsList: params.citiesIdsList,
+          recordsByPage: params.limit,
+          pageCurrentId: params.offset,
+        }),
+        meetingsApi.searchWithFiltersTotal({
+          searchTerms: params.searchTerms,
+          typeIdsList: params.typeIdsList,
+          statusesIdsList: params.statusesIdsList,
+          regionsIdsList: params.regionsIdsList,
+          citiesIdsList: params.citiesIdsList,
+        }),
+      ]);
+      return { data: data || [], total: total || 0 };
+    } catch (error) {
+      console.error('Erro ao buscar reuniões com filtros:', error);
+      return { data: [], total: 0 };
+    }
+  },
+
   async createMeeting(meeting: Partial<IMeeting>): Promise<IMeeting | null> {
     try {
       const data = await meetingsApi.create(meeting);

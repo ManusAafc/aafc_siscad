@@ -49,6 +49,9 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       supabase.auth.signOut();
     }
+    if (error.response?.status && error.response.status >= 400) {
+      console.error('[API Error]', error.response.status, error.response.data);
+    }
     return Promise.reject(error);
   }
 );

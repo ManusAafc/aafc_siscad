@@ -21,10 +21,12 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { dispatchLoadingStart, dispatchLoadingEnd } from '../../components/common/ButtonLoading';
+import { useToastStore } from '../../store/useToastStore';
 
 export const MeetingShow: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const addToast = useToastStore((s) => s.addToast);
   const [meeting, setMeeting] = useState<IMeeting | null>(null);
   const [members, setMembers] = useState<IMeetingMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,7 +61,7 @@ export const MeetingShow: React.FC = () => {
         await meetingService.deleteMeeting(id);
         navigate('/meetings');
       } catch (error) {
-        alert('Não foi possível excluir a reunião.');
+        addToast('Não foi possível excluir a reunião.', 'error');
       } finally {
         setIsDeleting(false);
         dispatchLoadingEnd();
@@ -74,7 +76,7 @@ export const MeetingShow: React.FC = () => {
       await meetingMemberService.confirmParticipation(meetingMemberId, 1);
       loadMeeting();
     } catch (error) {
-      alert('Não foi possível confirmar participação.');
+      addToast('Não foi possível confirmar participação.', 'error');
     } finally {
       setActionLoadingId(null);
     }
@@ -86,7 +88,7 @@ export const MeetingShow: React.FC = () => {
       await meetingMemberService.registerParticipation(meetingMemberId, participated);
       loadMeeting();
     } catch (error) {
-      alert('Não foi possível registrar participação.');
+      addToast('Não foi possível registrar participação.', 'error');
     } finally {
       setActionLoadingId(null);
     }
@@ -99,7 +101,7 @@ export const MeetingShow: React.FC = () => {
         await meetingMemberService.removeMemberFromMeeting(meetingMemberId);
         loadMeeting();
       } catch (error) {
-        alert('Não foi possível remover o socio.');
+        addToast('Não foi possível remover o socio.', 'error');
       } finally {
         setActionLoadingId(null);
       }

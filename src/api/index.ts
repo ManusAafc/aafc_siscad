@@ -6,3 +6,4 @@ export { plansApi } from './plans';
 export { regionsApi } from './regions';
 export { citiesApi } from './cities';
 export { webhookApi } from './webhook';
+export { logsApi } from './logs';
