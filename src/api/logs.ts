@@ -30,7 +30,7 @@ export const logsApi = {
     const offset = params.offset || 0;
 
     const response = await apiClient.get<ILog[]>(
-      `/v_logs${query}&order=created_date.desc&limit=${limit}&offset=${offset}`
+      `/v_audit_logs${query}&order=created_date.desc&limit=${limit}&offset=${offset}`
     );
     return response.data;
   },
@@ -59,7 +59,7 @@ export const logsApi = {
     const query = filters.length > 0 ? `?${filters.join('&')}` : '';
 
     const response = await apiClient.get<ILog[]>(
-      `/v_logs${query}&select=id`,
+      `/v_audit_logs${query}&select=id`,
       {
         headers: {
           Prefer: 'count=exact',
