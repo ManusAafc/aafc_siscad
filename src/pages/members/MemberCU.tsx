@@ -325,7 +325,7 @@ export const MemberCU: React.FC = () => {
 
       if (!hasChanges) {
         addToast('Nenhuma alteração detectada.', 'info');
-        navigate('/members');
+        navigate(`/members/${id}`, { replace: true });
         return;
       }
     }
@@ -382,7 +382,7 @@ export const MemberCU: React.FC = () => {
       if (isEditing && id) {
         await memberService.updateMember(id, submitData);
         addToast('Socio atualizado com sucesso!', 'success');
-        navigate('/members');
+        navigate(`/members/${id}`, { replace: true });
       } else {
         await memberService.createMember(submitData);
         addToast('Socio criado com sucesso!', 'success');
