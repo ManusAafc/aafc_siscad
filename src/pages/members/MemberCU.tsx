@@ -7,7 +7,7 @@ import { genderService } from '../../services/genderService';
 import { statusService } from '../../services/statusService';
 import { dispatchLoadingStart, dispatchLoadingEnd } from '../../components/common/ButtonLoading';
 import { cityService } from '../../services/cityService';
-import { Save, UserPlus, Calendar } from 'lucide-react';
+import { Save, UserPlus, Calendar, X } from 'lucide-react';
 import { useToastStore } from '../../store/useToastStore';
 import { formatCEP, formatMobile, formatCPF } from '../../utils/formatters';
 import { validateCPF } from '../../utils/validators';
@@ -159,7 +159,7 @@ export const MemberCU: React.FC = () => {
     zipCode: '',
     cityId: undefined,
     planId: undefined,
-    status: undefined,
+    status: isEditing ? undefined : 2,
     dateAafcStart: '',
     dateAafcEnd: '',
     statusReasonDescription: '',
@@ -280,28 +280,105 @@ export const MemberCU: React.FC = () => {
     }
   };
 
-  const validate = (): boolean => {
+  const isFormValid = (): boolean => {
+    if (!formData.name?.trim()) return false;
+    if (!formData.cpf?.trim()) return false;
+    if (!formData.birthDate?.trim()) return false;
+    if (!formData.gender?.trim()) return false;
+    if (!formData.mobile?.trim()) return false;
+    if (!formData.email?.trim()) return false;
+    if (!formData.address?.trim()) return false;
+    if (!formData.neighborhood?.trim()) return false;
+    if (!formData.zipCode?.trim()) return false;
+    if (!formData.cityId) return false;
+    if (!formData.planId) return false;
+    if (!formData.status) return false;
+    if (!formData.dateAafcStart?.trim()) return false;
+    return true;
+  };
+
+  const isFormValidAndNoErrors = isFormValid() && Object.keys(errors).length === 0;
+
+  const validate = async (): Promise<boolean> => {
     const newErrors: Record<string, string> = {};
 
+    // Campos obrigatorios
     if (!formData.name?.trim()) {
       newErrors.name = 'Nome é obrigatório';
     }
 
-    if (formData.cpf) {
+    if (!formData.cpf?.trim()) {
+      newErrors.cpf = 'CPF é obrigatório';
+    } else {
       const cpfDigits = formData.cpf.replace(/\D/g, '');
       if (cpfDigits.length !== 11) {
         newErrors.cpf = 'CPF deve conter 11 dígitos';
       } else if (!validateCPF(cpfDigits)) {
         newErrors.cpf = 'CPF inválido';
+      } else {
+        // Verifica unicidade do CPF
+        const existingMembers = await memberService.getMembersByCpf(cpfDigits);
+        if (existingMembers.length > 0) {
+          if (isEditing && id) {
+            // Na edicao: erro se o CPF pertence a outro socio
+            const belongsToOther = existingMembers.some((m) => m.id !== Number(id));
+            if (belongsToOther) {
+              newErrors.cpf = 'CPF já cadastrado para outro socio';
+            }
+          } else {
+            // Na inclusao: erro se o CPF ja existe
+            newErrors.cpf = 'CPF já cadastrado';
+          }
+        }
       }
     }
 
-    if (formData.mobile && !/^\d{10,11}$/.test(formData.mobile.replace(/\D/g, ''))) {
-      newErrors.mobile = 'Telefone deve conter 10 ou 11 dígitos';
+    if (!formData.birthDate?.trim()) {
+      newErrors.birthDate = 'Data de nascimento é obrigatória';
     }
 
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    if (!formData.gender?.trim()) {
+      newErrors.gender = 'Gênero é obrigatório';
+    }
+
+    if (!formData.mobile?.trim()) {
+      newErrors.mobile = 'Celular é obrigatório';
+    } else if (!/^\d{10,11}$/.test(formData.mobile.replace(/\D/g, ''))) {
+      newErrors.mobile = 'Celular deve conter 10 ou 11 dígitos';
+    }
+
+    if (!formData.email?.trim()) {
+      newErrors.email = 'Email é obrigatório';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'Email inválido';
+    }
+
+    if (!formData.address?.trim()) {
+      newErrors.address = 'Logradouro é obrigatório';
+    }
+
+    if (!formData.neighborhood?.trim()) {
+      newErrors.neighborhood = 'Bairro é obrigatório';
+    }
+
+    if (!formData.zipCode?.trim()) {
+      newErrors.zipCode = 'CEP é obrigatório';
+    }
+
+    if (!formData.cityId) {
+      newErrors.cityId = 'Cidade/UF é obrigatório';
+    }
+
+    if (!formData.planId) {
+      newErrors.planId = 'Plano é obrigatório';
+    }
+
+    if (!formData.status) {
+      newErrors.status = 'Situação é obrigatória';
+    }
+
+    if (!formData.dateAafcStart?.trim()) {
+      newErrors.dateAafcStart = 'Data de início é obrigatória';
     }
 
     setErrors(newErrors);
@@ -310,7 +387,7 @@ export const MemberCU: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) {
+    if (!(await validate())) {
       return;
     }
 
@@ -416,7 +493,7 @@ export const MemberCU: React.FC = () => {
         <h3 style={styles.sectionTitle}>Informações Pessoais</h3>
         <div style={styles.formGrid}>
           <div className="input-group">
-            <label className="input-label" htmlFor="name">Nome Completo</label>
+            <label className="input-label" htmlFor="name">Nome Completo <span style={styles.required}>*</span></label>
             <input
               id="name"
               type="text"
@@ -430,7 +507,7 @@ export const MemberCU: React.FC = () => {
           </div>
 
           <div className="input-group">
-            <label className="input-label" htmlFor="cpf">CPF</label>
+            <label className="input-label" htmlFor="cpf">CPF <span style={styles.required}>*</span></label>
             <input
               id="cpf"
               type="tel"
@@ -438,7 +515,7 @@ export const MemberCU: React.FC = () => {
               className="input-control"
               value={formData.cpf || ''}
               onChange={(e) => handleChange('cpf', e.target.value.replace(/\D/g, ''))}
-              onBlur={() => {
+              onBlur={async () => {
                 const cpfDigits = (formData.cpf || '').replace(/\D/g, '');
                 if (cpfDigits.length === 0) {
                   setErrors((prev) => { const { cpf, ...rest } = prev; return rest; });
@@ -447,7 +524,22 @@ export const MemberCU: React.FC = () => {
                 } else if (!validateCPF(cpfDigits)) {
                   setErrors((prev) => ({ ...prev, cpf: 'CPF inválido' }));
                 } else {
-                  setErrors((prev) => { const { cpf, ...rest } = prev; return rest; });
+                  // Verifica unicidade do CPF
+                  const existingMembers = await memberService.getMembersByCpf(cpfDigits);
+                  if (existingMembers.length > 0) {
+                    if (isEditing && id) {
+                      const belongsToOther = existingMembers.some((m) => m.id !== Number(id));
+                      if (belongsToOther) {
+                        setErrors((prev) => ({ ...prev, cpf: 'CPF já cadastrado para outro socio' }));
+                      } else {
+                        setErrors((prev) => { const { cpf, ...rest } = prev; return rest; });
+                      }
+                    } else {
+                      setErrors((prev) => ({ ...prev, cpf: 'CPF já cadastrado' }));
+                    }
+                  } else {
+                    setErrors((prev) => { const { cpf, ...rest } = prev; return rest; });
+                  }
                 }
               }}
               placeholder="000.000.000-00"
@@ -458,13 +550,13 @@ export const MemberCU: React.FC = () => {
 
           <DateInput
             id="birthDate"
-            label="Data de Nascimento"
+            label="Data de Nascimento *"
             value={formData.birthDate || ''}
             onChange={(v) => handleChange('birthDate', v)}
           />
 
           <div className="input-group">
-            <label className="input-label" htmlFor="gender">Gênero</label>
+            <label className="input-label" htmlFor="gender">Gênero <span style={styles.required}>*</span></label>
             <select
               id="gender"
               className="input-control"
@@ -485,7 +577,7 @@ export const MemberCU: React.FC = () => {
         <h3 style={styles.sectionTitle}>Informações de Contato</h3>
         <div style={styles.formGrid}>
           <div className="input-group">
-            <label className="input-label" htmlFor="mobile">Celular</label>
+            <label className="input-label" htmlFor="mobile">Celular <span style={styles.required}>*</span></label>
             <input
               id="mobile"
               type="tel"
@@ -499,7 +591,7 @@ export const MemberCU: React.FC = () => {
           </div>
 
           <div className="input-group">
-            <label className="input-label" htmlFor="email">Email</label>
+            <label className="input-label" htmlFor="email">Email <span style={styles.required}>*</span></label>
             <input
               id="email"
               type="email"
@@ -516,7 +608,7 @@ export const MemberCU: React.FC = () => {
         <h3 style={styles.sectionTitle}>Endereço</h3>
         <div style={styles.formGrid}>
           <div className="input-group">
-            <label className="input-label" htmlFor="address">Logradouro</label>
+            <label className="input-label" htmlFor="address">Logradouro <span style={styles.required}>*</span></label>
             <input
               id="address"
               type="text"
@@ -528,7 +620,7 @@ export const MemberCU: React.FC = () => {
           </div>
 
           <div className="input-group">
-            <label className="input-label" htmlFor="neighborhood">Bairro</label>
+            <label className="input-label" htmlFor="neighborhood">Bairro <span style={styles.required}>*</span></label>
             <input
               id="neighborhood"
               type="text"
@@ -540,7 +632,7 @@ export const MemberCU: React.FC = () => {
           </div>
 
           <div className="input-group">
-            <label className="input-label" htmlFor="zipCode">CEP</label>
+            <label className="input-label" htmlFor="zipCode">CEP <span style={styles.required}>*</span></label>
             <input
               id="zipCode"
               type="tel"
@@ -554,7 +646,7 @@ export const MemberCU: React.FC = () => {
           </div>
 
           <div className="input-group">
-            <label className="input-label" htmlFor="cityId">Cidade / UF</label>
+            <label className="input-label" htmlFor="cityId">Cidade / UF <span style={styles.required}>*</span></label>
             <select
               id="cityId"
               className="input-control"
@@ -575,7 +667,7 @@ export const MemberCU: React.FC = () => {
         <h3 style={styles.sectionTitle}>Plano & Situação</h3>
         <div style={styles.formGrid}>
           <div className="input-group">
-            <label className="input-label" htmlFor="planId">Plano Associado</label>
+            <label className="input-label" htmlFor="planId">Plano Associado <span style={styles.required}>*</span></label>
             <select
               id="planId"
               className="input-control"
@@ -590,24 +682,33 @@ export const MemberCU: React.FC = () => {
           </div>
 
           <div className="input-group">
-            <label className="input-label" htmlFor="status">Situação</label>
+            <label className="input-label" htmlFor="status">Situação <span style={styles.required}>*</span></label>
             <select
               id="status"
               className="input-control"
               value={formData.status ?? ''}
               onChange={(e) => handleChange('status', Number(e.target.value))}
+              disabled={!isEditing && formData.status === 2}
             >
-              {statuses.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.description}
-                </option>
-              ))}
+              {isEditing ? (
+                statuses.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.description}
+                  </option>
+                ))
+              ) : (
+                statuses.filter((s) => s.id === 2).map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.description}
+                  </option>
+                ))
+              )}
             </select>
           </div>
 
           <DateInput
             id="dateAafcStart"
-            label="Data Início"
+            label="Data Início *"
             value={formData.dateAafcStart || ''}
             onChange={(v) => handleChange('dateAafcStart', v)}
           />
@@ -639,10 +740,20 @@ export const MemberCU: React.FC = () => {
         {/* Submit */}
         <div style={styles.actionsContainer}>
           <button 
+            type="button"
+            className="btn btn-secondary"
+            style={{ flex: 1 }}
+            onClick={() => navigate(-1)}
+            disabled={isSaving}
+          >
+            <X size={18} />
+            <span>Cancelar</span>
+          </button>
+          <button 
             type="submit" 
             className="btn btn-primary"
-            style={{ width: '100%' }}
-            disabled={isSaving}
+            style={{ flex: 1 }}
+            disabled={isSaving || !isFormValidAndNoErrors}
           >
             {isSaving ? (
               <div className="spinner" style={{ width: '1.25rem', height: '1.25rem' }}></div>
@@ -702,6 +813,10 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '0.75rem',
     color: 'hsl(var(--destructive))',
     marginTop: '0.25rem',
+  },
+  required: {
+    color: 'hsl(var(--destructive))',
+    marginLeft: '0.15rem',
   },
   actionsContainer: {
     display: 'flex',

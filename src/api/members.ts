@@ -16,6 +16,13 @@ export const membersApi = {
     return response.data?.[0];
   },
 
+  async getByCpf(cpf: string) {
+    const response = await apiClient.get<IMember[]>(
+      `/members?cpf=eq.${cpf}&select=id,cpf`
+    );
+    return response.data;
+  },
+
   async getByStatusIdAndRegionId(statusId: number, regionId: number) {
     const response = await apiClient.get<IMember[]>(
       `/v_members?status_id=eq.${statusId}&region_id=eq.${regionId}&select=*`

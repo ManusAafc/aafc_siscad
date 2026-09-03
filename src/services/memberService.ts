@@ -76,6 +76,16 @@ export const memberService = {
     }
   },
 
+  async getMembersByCpf(cpf: string): Promise<IMember[]> {
+    try {
+      const data = await membersApi.getByCpf(cpf);
+      return data || [];
+    } catch (error) {
+      console.error('Erro ao buscar membro por CPF:', error);
+      return [];
+    }
+  },
+
   async createMember(member: Partial<IMember>): Promise<IMember | null> {
     try {
       const data = await membersApi.create(member);
