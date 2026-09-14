@@ -46,6 +46,7 @@ function isoToDateInput(iso: string | undefined): string {
 
 function dateInputToIso(dateStr: string): string {
   if (!dateStr) return '';
+  if (dateStr.includes('T')) return dateStr;
   return `${dateStr}T00:00:00`;
 }
 
@@ -328,7 +329,7 @@ export const MemberCU: React.FC = () => {
         if (existingMembers.length > 0) {
           if (isEditing && id) {
             // Na edicao: erro se o CPF pertence a outro socio
-            const belongsToOther = existingMembers.some((m) => m.id !== Number(id));
+            const belongsToOther = existingMembers.some((m) => String(m.id) !== String(id));
             if (belongsToOther) {
               newErrors.cpf = 'CPF já cadastrado para outro socio';
             }
@@ -459,7 +460,6 @@ export const MemberCU: React.FC = () => {
       date_aafc_start: formData.dateAafcStart ? dateInputToIso(formData.dateAafcStart) : undefined,
       date_aafc_end: formData.dateAafcEnd ? dateInputToIso(formData.dateAafcEnd) : undefined,
       status_reason_id: formData.statusReasonId || undefined,
-      status_reason_description: formData.statusReasonDescription || undefined,
     };
 
     setIsSaving(true);
@@ -537,7 +537,7 @@ export const MemberCU: React.FC = () => {
                   const existingMembers = await memberService.getMembersByCpf(cpfDigits);
                   if (existingMembers.length > 0) {
                     if (isEditing && id) {
-                      const belongsToOther = existingMembers.some((m) => m.id !== Number(id));
+                      const belongsToOther = existingMembers.some((m) => String(m.id) !== String(id));
                       if (belongsToOther) {
                         setErrors((prev) => ({ ...prev, cpf: 'CPF já cadastrado para outro socio' }));
                       } else {

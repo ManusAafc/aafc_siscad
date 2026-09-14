@@ -18,7 +18,7 @@ export const membersApi = {
 
   async getByCpf(cpf: string) {
     const response = await apiClient.get<IMember[]>(
-      `/members?cpf=eq.${cpf}&select=id,cpf`
+      `/v_members?cpf=eq.${cpf}&select=id,cpf`
     );
     return response.data;
   },
