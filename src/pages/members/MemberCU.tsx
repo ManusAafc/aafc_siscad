@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { IMember, IPlan, ICity, IGender, IMemberStatus } from '../../models';
+import { IMember, IPlan, ICity, IGender, IMemberStatus, IStatusReason } from '../../models';
 import { memberService } from '../../services/memberService';
 import { planService } from '../../services/planService';
 import { genderService } from '../../services/genderService';
 import { statusService } from '../../services/statusService';
+import { statusReasonService } from '../../services/statusReasonService';
 import { dispatchLoadingStart, dispatchLoadingEnd } from '../../components/common/ButtonLoading';
 import { cityService } from '../../services/cityService';
 import { Save, UserPlus, Calendar, X } from 'lucide-react';
@@ -162,6 +163,7 @@ export const MemberCU: React.FC = () => {
     status: isEditing ? undefined : 2,
     dateAafcStart: '',
     dateAafcEnd: '',
+    statusReasonId: undefined,
     statusReasonDescription: '',
   });
 
@@ -169,6 +171,7 @@ export const MemberCU: React.FC = () => {
   const [cities, setCities] = useState<ICity[]>([]);
   const [genders, setGenders] = useState<IGender[]>([]);
   const [statuses, setStatuses] = useState<IMemberStatus[]>([]);
+  const [statusReasons, setStatusReasons] = useState<IStatusReason[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -177,14 +180,16 @@ export const MemberCU: React.FC = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [plansData, gendersData, statusesData] = await Promise.all([
+      const [plansData, gendersData, statusesData, statusReasonsData] = await Promise.all([
         planService.getAllPlans(),
         genderService.getAllGenders(),
         statusService.getAllStatuses(),
+        statusReasonService.getAllStatusReasons(),
       ]);
       setPlans(plansData);
       setGenders(gendersData);
       setStatuses(statusesData);
+      setStatusReasons(statusReasonsData);
 
       if (isEditing && id) {
         const member = await memberService.getMemberById(id);
@@ -220,6 +225,7 @@ export const MemberCU: React.FC = () => {
             status: statusId,
             dateAafcStart: isoToDateInput(member.dateAafcStart),
             dateAafcEnd: isoToDateInput(member.dateAafcEnd),
+            statusReasonId: member.statusReasonId || undefined,
             statusReasonDescription: member.statusReasonDescription || '',
           });
           // Salva copia dos dados originais para comparacao posterior
@@ -238,6 +244,7 @@ export const MemberCU: React.FC = () => {
             status: statusId,
             dateAafcStart: isoToDateInput(member.dateAafcStart),
             dateAafcEnd: isoToDateInput(member.dateAafcEnd),
+            statusReasonId: member.statusReasonId || undefined,
             statusReasonDescription: member.statusReasonDescription || '',
           });
         }
@@ -451,6 +458,8 @@ export const MemberCU: React.FC = () => {
       status_id: statusId || undefined,
       date_aafc_start: formData.dateAafcStart ? dateInputToIso(formData.dateAafcStart) : undefined,
       date_aafc_end: formData.dateAafcEnd ? dateInputToIso(formData.dateAafcEnd) : undefined,
+      status_reason_id: formData.statusReasonId || undefined,
+      status_reason_description: formData.statusReasonDescription || undefined,
     };
 
     setIsSaving(true);
@@ -723,15 +732,28 @@ export const MemberCU: React.FC = () => {
               />
 
               <div className="input-group">
-                <label className="input-label" htmlFor="statusReasonDescription">Motivo Desligamento</label>
-                <input
-                  id="statusReasonDescription"
-                  type="text"
+                <label className="input-label" htmlFor="statusReasonId">Motivo Desligamento</label>
+                <select
+                  id="statusReasonId"
                   className="input-control"
-                  value={formData.statusReasonDescription || ''}
-                  onChange={(e) => handleChange('statusReasonDescription', e.target.value)}
-                  placeholder="Motivo do desligamento"
-                />
+                  value={formData.statusReasonId ?? ''}
+                  onChange={(e) => {
+                    const selectedId = e.target.value ? Number(e.target.value) : undefined;
+                    const selectedReason = statusReasons.find((r) => r.id === selectedId);
+                    setFormData((prev) => ({
+                      ...prev,
+                      statusReasonId: selectedId,
+                      statusReasonDescription: selectedReason?.description || '',
+                    }));
+                  }}
+                >
+                  <option value="">Selecione o motivo...</option>
+                  {statusReasons.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.description}
+                    </option>
+                  ))}
+                </select>
               </div>
             </>
           )}

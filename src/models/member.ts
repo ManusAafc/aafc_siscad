@@ -78,6 +78,12 @@ export interface IMemberStatus {
   color?: string;
 }
 
+export interface IStatusReason {
+  id: number;
+  code: string;
+  description: string;
+}
+
 export const EMPTY_MEMBER: IMember = {
   id: 0,
   name: '',
