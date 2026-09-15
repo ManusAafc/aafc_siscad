@@ -86,6 +86,16 @@ export const memberService = {
     }
   },
 
+  async getMembersByCode(code: string): Promise<IMember[]> {
+    try {
+      const data = await membersApi.getByCode(code);
+      return data || [];
+    } catch (error) {
+      console.error('Erro ao buscar membro por matrícula:', error);
+      return [];
+    }
+  },
+
   async createMember(member: Partial<IMember>): Promise<IMember | null> {
     try {
       const data = await membersApi.create(member);

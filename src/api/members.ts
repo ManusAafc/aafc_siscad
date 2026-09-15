@@ -23,6 +23,13 @@ export const membersApi = {
     return response.data;
   },
 
+  async getByCode(code: string) {
+    const response = await apiClient.get<IMember[]>(
+      `/v_members?code=eq.${code}&select=id,code`
+    );
+    return response.data;
+  },
+
   async getByStatusIdAndRegionId(statusId: number, regionId: number) {
     const response = await apiClient.get<IMember[]>(
       `/v_members?status_id=eq.${statusId}&region_id=eq.${regionId}&select=*`

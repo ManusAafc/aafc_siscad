@@ -14,7 +14,8 @@ import {
   MapPin, 
   ShieldAlert,
   Users,
-  Award
+  Award,
+  Hash
 } from 'lucide-react';
 export const MemberShow: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -173,6 +174,14 @@ export const MemberShow: React.FC = () => {
         <div className="card" style={styles.infoCard}>
           <h3 style={styles.infoCardTitle}>Informações Pessoais</h3>
           
+          <div style={styles.infoRow}>
+            <Hash size={18} style={styles.infoIcon} />
+            <div style={styles.infoContent}>
+              <span style={styles.infoLabel}>Matrícula</span>
+              <span style={styles.infoValue}>{member.code || 'Não informado'}</span>
+            </div>
+          </div>
+
           <div style={styles.infoRow}>
             <User size={18} style={styles.infoIcon} />
             <div style={styles.infoContent}>

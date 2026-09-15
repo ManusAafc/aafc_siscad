@@ -920,6 +920,8 @@ export const MembersSearch: React.FC = () => {
                   <div style={styles.memberInfo}>
                     <h3 style={styles.memberName}>{member.name || member.name_full || member.nameFull || 'Sem nome'}</h3>
                     <div style={styles.memberDetailsRow}>
+                      <span>Matrícula: {member.code || 'Sem matrícula'}</span>
+                      <span style={styles.bullet}>•</span>
                       <span>CPF: {member.cpf ? formatCPF(member.cpf) : 'Sem CPF'}</span>
                       <span style={styles.bullet}>•</span>
                       <span>Tel: {member.mobile ? formatPhone(member.mobile) : 'Sem telefone'}</span>

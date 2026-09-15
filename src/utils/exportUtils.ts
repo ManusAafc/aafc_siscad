@@ -13,7 +13,7 @@ export const exportMembersToPDF = async (members: IMember[], title: string = 'Re
   const startY = addPDFHeader({ doc, title, totalRecords: members.length });
 
   // Colunas
-  const tableColumn = ["Nome", "CPF", "Telefone", "Celular", "Cidade/UF", "Região", "Plano", "Situação"];
+  const tableColumn = ["Nome", "Matrícula", "CPF", "Telefone", "Celular", "Cidade/UF", "Região", "Plano", "Situação"];
   
   // Linhas
   const tableRows: any[] = [];
@@ -36,6 +36,7 @@ export const exportMembersToPDF = async (members: IMember[], title: string = 'Re
 
     tableRows.push([
       nome,
+      member.code || '',
       cpf,
       tel,
       cel,
@@ -131,6 +132,7 @@ export const exportMembersToExcel = async (members: IMember[], title: string = '
     
     return {
       Nome: member.name || member.name_full || member.nameFull || '',
+      Matrícula: member.code || '',
       CPF: member.cpf ? formatCPF(member.cpf) : '',
       Telefone: member.phone ? formatPhone(member.phone) : '',
       Celular: member.mobile ? formatPhone(member.mobile) : '',

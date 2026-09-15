@@ -213,6 +213,7 @@ export const MemberCU: React.FC = () => {
           
           setFormData({
             name: member.name || '',
+            code: member.code || '',
             cpf: member.cpfMask || member.cpf || '',
             birthDate: birthDateFormatted,
             gender: genderValue,
@@ -232,6 +233,7 @@ export const MemberCU: React.FC = () => {
           // Salva copia dos dados originais para comparacao posterior
           setOriginalFormData({
             name: member.name || '',
+            code: member.code || '',
             cpf: member.cpfMask || member.cpf || '',
             birthDate: birthDateFormatted,
             gender: genderValue,
@@ -315,6 +317,22 @@ export const MemberCU: React.FC = () => {
       newErrors.name = 'Nome é obrigatório';
     }
 
+    if (!formData.code?.trim()) {
+      newErrors.code = 'Matrícula é obrigatória';
+    } else {
+      const existingMembersByCode = await memberService.getMembersByCode(formData.code.trim());
+      if (existingMembersByCode.length > 0) {
+        if (isEditing && id) {
+          const belongsToOther = existingMembersByCode.some((m) => String(m.id) !== String(id));
+          if (belongsToOther) {
+            newErrors.code = 'Matrícula já cadastrada para outro socio';
+          }
+        } else {
+          newErrors.code = 'Matrícula já cadastrada';
+        }
+      }
+    }
+
     if (!formData.cpf?.trim()) {
       newErrors.cpf = 'CPF é obrigatório';
     } else {
@@ -324,17 +342,14 @@ export const MemberCU: React.FC = () => {
       } else if (!validateCPF(cpfDigits)) {
         newErrors.cpf = 'CPF inválido';
       } else {
-        // Verifica unicidade do CPF
         const existingMembers = await memberService.getMembersByCpf(cpfDigits);
         if (existingMembers.length > 0) {
           if (isEditing && id) {
-            // Na edicao: erro se o CPF pertence a outro socio
             const belongsToOther = existingMembers.some((m) => String(m.id) !== String(id));
             if (belongsToOther) {
               newErrors.cpf = 'CPF já cadastrado para outro socio';
             }
           } else {
-            // Na inclusao: erro se o CPF ja existe
             newErrors.cpf = 'CPF já cadastrado';
           }
         }
@@ -438,6 +453,7 @@ export const MemberCU: React.FC = () => {
     const submitData = {
       // Dados pessoais
       name: formData.name || undefined,
+      code: formData.code || undefined,
       cpf: cpfNumbers || undefined,
       cpf_mask: formData.cpf || undefined,
       birthday: formData.birthDate || undefined,
@@ -513,6 +529,41 @@ export const MemberCU: React.FC = () => {
               required
             />
             {errors.name && <span style={styles.errorText}>{errors.name}</span>}
+          </div>
+
+          <div className="input-group">
+            <label className="input-label" htmlFor="code">Matrícula <span style={styles.required}>*</span></label>
+            <input
+              id="code"
+              type="text"
+              className="input-control"
+              value={formData.code || ''}
+              onChange={(e) => handleChange('code', e.target.value)}
+              onBlur={async () => {
+                const codeValue = (formData.code || '').trim();
+                if (codeValue.length === 0) {
+                  setErrors((prev) => { const { code, ...rest } = prev; return rest; });
+                } else {
+                  const existingMembers = await memberService.getMembersByCode(codeValue);
+                  if (existingMembers.length > 0) {
+                    if (isEditing && id) {
+                      const belongsToOther = existingMembers.some((m) => String(m.id) !== String(id));
+                      if (belongsToOther) {
+                        setErrors((prev) => ({ ...prev, code: 'Matrícula já cadastrada para outro socio' }));
+                      } else {
+                        setErrors((prev) => { const { code, ...rest } = prev; return rest; });
+                      }
+                    } else {
+                      setErrors((prev) => ({ ...prev, code: 'Matrícula já cadastrada' }));
+                    }
+                  } else {
+                    setErrors((prev) => { const { code, ...rest } = prev; return rest; });
+                  }
+                }
+              }}
+              placeholder="Número da matrícula"
+            />
+            {errors.code && <span style={styles.errorText}>{errors.code}</span>}
           </div>
 
           <div className="input-group">
