@@ -15,13 +15,20 @@ import {
   ShieldAlert,
   Users,
   Award,
-  Hash
+  Hash,
+  Trash2
 } from 'lucide-react';
+import { useModalStore } from '../../store/useModalStore';
+import { useMemberStore } from '../../store/useMemberStore';
+import { usePermissions } from '../../store/usePermissionStore';
 export const MemberShow: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [member, setMember] = useState<IMember | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { openConfirm, openAlert } = useModalStore();
+  const deleteMemberFromStore = useMemberStore((state) => state.deleteMember);
+  const { canEdit, canDelete } = usePermissions();
 
   useEffect(() => {
     if (id) {
@@ -43,6 +50,32 @@ export const MemberShow: React.FC = () => {
       const phone = member.mobile.replace(/\D/g, '');
       window.open(`https://api.whatsapp.com/send?phone=55${phone}`, '_blank');
     }
+  };
+
+  const handleDelete = async () => {
+    if (!member) return;
+    const success = await deleteMemberFromStore(String(member.id));
+    if (success) {
+      navigate('/members');
+    } else {
+      openAlert({
+        title: 'Erro ao excluir',
+        message: 'Não foi possível excluir o registro. Tente novamente.',
+        variant: 'error',
+      });
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    if (!member) return;
+    openConfirm({
+      title: 'Confirmar exclusão',
+      message: `Deseja realmente excluir o registro de "${member.name}"? O registro não será eliminado da tabela, apenas marcado como excluído (is_deleted).`,
+      variant: 'warning',
+      confirmLabel: 'Excluir',
+      cancelLabel: 'Cancelar',
+      onConfirm: handleDelete,
+    });
   };
 
   if (isLoading) {
@@ -68,12 +101,22 @@ export const MemberShow: React.FC = () => {
 
   return (
     <div style={styles.container}>
-      {/* Header with Edit button */}
+      {/* Header with Edit/Delete buttons */}
       <div style={styles.header}>
-        <button onClick={() => navigate(`/members/${id}/edit`)} className="btn btn-primary" style={styles.editBtn}>
-          <Pencil size={16} />
-          <span>Editar</span>
-        </button>
+        <div style={styles.actionGroup}>
+          {canDelete('members') && (
+            <button onClick={handleConfirmDelete} className="btn" style={styles.deleteBtn}>
+              <Trash2 size={16} />
+              <span>Excluir</span>
+            </button>
+          )}
+          {canEdit('members') && (
+            <button onClick={() => navigate(`/members/${id}/edit`)} className="btn btn-primary" style={styles.editBtn}>
+              <Pencil size={16} />
+              <span>Editar</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Profile summary card */}
@@ -323,6 +366,14 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '0.5rem',
+  },
+  deleteBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.5rem',
+    backgroundColor: 'hsl(var(--destructive))',
+    color: 'hsl(var(--destructive-foreground))',
+    border: 'none',
   },
   actionGroup: {
     display: 'flex',

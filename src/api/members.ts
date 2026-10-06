@@ -113,8 +113,10 @@ export const membersApi = {
     return response.data;
   },
 
-  async delete(id: number) {
-    const response = await apiClient.delete(`/members?id=eq.${id}`);
+  async softDelete(id: number) {
+    const response = await apiClient.patch(`/members?id=eq.${id}`, {
+      is_deleted: true,
+    });
     return response.data;
   },
 

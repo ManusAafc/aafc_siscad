@@ -109,12 +109,17 @@ export const useMemberStore = create<MemberState>((set, get) => ({
   deleteMember: async (id) => {
     set({ isLoading: true });
     try {
+      const numericId = parseInt(id, 10);
       const success = await memberService.deleteMember(id);
       if (success) {
         set((state) => ({
-          searchResults: state.searchResults.filter((m) => m.id !== parseInt(id, 10)),
+          searchResults: state.searchResults.filter((m) => m.id !== numericId),
+          searchTotal: Math.max(0, state.searchTotal - 1),
+          memberSelected: state.memberSelected?.id === numericId ? null : state.memberSelected,
           isLoading: false,
         }));
+      } else {
+        set({ isLoading: false });
       }
       return success;
     } catch (error) {

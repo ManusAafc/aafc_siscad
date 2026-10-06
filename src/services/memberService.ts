@@ -118,7 +118,7 @@ export const memberService = {
 
   async deleteMember(id: string): Promise<boolean> {
     try {
-      await membersApi.delete(parseInt(id, 10));
+      await membersApi.softDelete(parseInt(id, 10));
       return true;
     } catch (error) {
       console.error('Erro ao deletar membro:', error);

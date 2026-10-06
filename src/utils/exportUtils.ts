@@ -124,6 +124,18 @@ export const exportMembersToLabels = async (members: IMember[]) => {
   await saveFileOnDevice(blob, `etiquetas_${new Date().getTime()}.pdf`);
 };
 
+// Converte 'YYYY-MM-DD' (ou ISO com hora) para o serial numérico do Excel,
+// sem depender de timezone, para a célula ser gravada como data de verdade.
+const toExcelDateSerial = (value?: string | null): number | null => {
+  if (!value) return null;
+  const [datePart] = value.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return (Date.UTC(year, month - 1, day) - Date.UTC(1899, 11, 30)) / 86400000;
+};
+
+const BIRTHDAY_HEADER = 'Data de Nascimento';
+
 export const exportMembersToExcel = async (members: IMember[], title: string = 'Membros') => {
   const data = members.map((m) => {
     const member = m as any;
@@ -139,11 +151,24 @@ export const exportMembersToExcel = async (members: IMember[], title: string = '
       'Cidade/UF': city ? `${city}${uf ? `/${uf}` : ''}` : '',
       Regiao: member.regionCode || member.region_code || member.db_member_region_code || member.db_region_code || member.regionDescription || member.regionName || member.region || '',
       Plano: member.planCode || member.plan_code || member.db_member_plan_code || member.db_plan_code || member.planDescription || member.planName || member.plan || '',
-      Situacao: member.statusName || member.status_name || member.statusDescription || member.status_description || `Status ${(member.status_id ?? member.statusId ?? '')}`
+      Situacao: member.statusName || member.status_name || member.statusDescription || member.status_description || `Status ${(member.status_id ?? member.statusId ?? '')}`,
+      'Data de Nascimento': toExcelDateSerial(member.birthday) ?? ''
     };
   });
 
   const worksheet = XLSX.utils.json_to_sheet(data);
+
+  // Formata a coluna de aniversário como data (dd/mm/yyyy) em vez de texto
+  const birthdayCol = Object.keys(data[0] || {}).indexOf(BIRTHDAY_HEADER);
+  if (birthdayCol >= 0) {
+    data.forEach((_, index) => {
+      const cell = worksheet[XLSX.utils.encode_cell({ r: index + 1, c: birthdayCol })];
+      if (cell && cell.t === 'n') {
+        cell.z = 'dd/mm/yyyy';
+      }
+    });
+  }
+
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Membros");
   

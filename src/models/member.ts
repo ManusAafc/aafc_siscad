@@ -53,6 +53,7 @@ export interface IMember {
   createdAtDatetime: string | null;
   updatedAt: string;
   updatedAtDatetime: string | null;
+  isDeleted?: boolean;
 
   status?: number;
   statusName?: string;

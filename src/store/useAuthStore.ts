@@ -46,6 +46,7 @@ async function buildUserFromProfile(authUser: { id: string; email?: string; user
         dbMemberStatusId: profile.db_member_status_id ?? profile.dbMemberStatusId ?? 0,
         isManagerMembers: toBoolean(profile.is_manager_members ?? profile.isManagerMembers),
         isManagerMeetings: toBoolean(profile.is_manager_meetings ?? profile.isManagerMeetings),
+        profile_id: profile.profile_id ?? profile.profileId ?? null,
       };
     }
   } catch (e) {
