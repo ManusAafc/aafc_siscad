@@ -54,6 +54,16 @@ function toDisplayDate(iso: string | undefined): string {
   return formatDisplayDate(iso || '');
 }
 
+/** Mascara progressiva de telefone fixo (DDD + 8 ou 9 digitos) */
+function formatPhoneInput(value: string): string {
+  const digits = value.replace(/\D/g, '').substring(0, 11);
+  if (digits.length <= 2) return digits;
+  const ddd = digits.substring(0, 2);
+  const rest = digits.substring(2);
+  if (rest.length <= 4) return `(${ddd}) ${rest}`;
+  return `(${ddd}) ${rest.substring(0, 4)}-${rest.substring(4)}`;
+}
+
 interface DateInputProps {
   id: string;
   label: string;
@@ -155,6 +165,7 @@ export const MemberCU: React.FC = () => {
     birthDate: '',
     gender: '',
     mobile: '',
+    phone: '',
     email: '',
     address: '',
     neighborhood: '',
@@ -218,6 +229,7 @@ export const MemberCU: React.FC = () => {
             birthDate: birthDateFormatted,
             gender: genderValue,
             mobile: member.mobileMask || member.mobile || '',
+            phone: member.phone ? formatPhoneInput(member.phone) : '',
             email: member.email || '',
             address: member.address || '',
             neighborhood: member.neighborhood || '',
@@ -238,6 +250,7 @@ export const MemberCU: React.FC = () => {
             birthDate: birthDateFormatted,
             gender: genderValue,
             mobile: member.mobileMask || member.mobile || '',
+            phone: member.phone ? formatPhoneInput(member.phone) : '',
             email: member.email || '',
             address: member.address || '',
             neighborhood: member.neighborhood || '',
@@ -280,6 +293,9 @@ export const MemberCU: React.FC = () => {
     }
     if (field === 'mobile') {
       formattedValue = formatMobile(value);
+    }
+    if (field === 'phone') {
+      formattedValue = formatPhoneInput(value);
     }
     if (field === 'cpf') {
       formattedValue = formatCPF(value);
@@ -370,6 +386,13 @@ export const MemberCU: React.FC = () => {
       newErrors.mobile = 'Celular deve conter 10 ou 11 dígitos';
     }
 
+    if (formData.phone?.trim()) {
+      const phoneDigits = formData.phone.replace(/\D/g, '');
+      if (phoneDigits.length < 10 || phoneDigits.length > 11) {
+        newErrors.phone = 'Telefone fixo deve conter 10 ou 11 dígitos';
+      }
+    }
+
     if (!formData.email?.trim()) {
       newErrors.email = 'Email é obrigatório';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
@@ -433,6 +456,7 @@ export const MemberCU: React.FC = () => {
     // Prepara dados para envio ao banco (mapeia campos do formulario para colunas da tabela)
     const cpfNumbers = (formData.cpf || '').replace(/\D/g, '');
     const mobileNumbers = (formData.mobile || '').replace(/\D/g, '');
+    const phoneNumbers = (formData.phone || '').replace(/\D/g, '');
     const zipNumbers = (formData.zipCode || '').replace(/\D/g, '');
 
     const mobileDDI = mobileNumbers ? `55${mobileNumbers}` : '';
@@ -463,6 +487,7 @@ export const MemberCU: React.FC = () => {
       mobile_mask: formData.mobile || undefined,
       mobile_ddi: mobileDDI || undefined,
       whatsapp_id: whatsappId || undefined,
+      phone: phoneNumbers || undefined,
       email: formData.email || undefined,
       // Endereco
       address: formData.address || undefined,
@@ -648,6 +673,20 @@ export const MemberCU: React.FC = () => {
               placeholder="(00) 00000-0000"
             />
             {errors.mobile && <span style={styles.errorText}>{errors.mobile}</span>}
+          </div>
+
+          <div className="input-group">
+            <label className="input-label" htmlFor="phone">Telefone Fixo</label>
+            <input
+              id="phone"
+              type="tel"
+              inputMode="numeric"
+              className="input-control"
+              value={formData.phone || ''}
+              onChange={(e) => handleChange('phone', e.target.value.replace(/\D/g, ''))}
+              placeholder="(00) 0000-0000"
+            />
+            {errors.phone && <span style={styles.errorText}>{errors.phone}</span>}
           </div>
 
           <div className="input-group">

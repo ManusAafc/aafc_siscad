@@ -271,10 +271,22 @@ export const MemberShow: React.FC = () => {
           <div style={styles.infoRow}>
             <Phone size={18} style={styles.infoIcon} />
             <div style={styles.infoContent}>
-              <span style={styles.infoLabel}>Telefone</span>
+              <span style={styles.infoLabel}>Celular</span>
               <span style={styles.infoValue}>
-                {(member.mobile || member.phone) 
-                  ? formatPhone(member.mobile || member.phone) 
+                {member.mobile 
+                  ? formatPhone(member.mobile) 
+                  : 'Não informado'}
+              </span>
+            </div>
+          </div>
+
+          <div style={styles.infoRow}>
+            <Phone size={18} style={styles.infoIcon} />
+            <div style={styles.infoContent}>
+              <span style={styles.infoLabel}>Telefone Fixo</span>
+              <span style={styles.infoValue}>
+                {member.phone 
+                  ? formatPhone(member.phone) 
                   : 'Não informado'}
               </span>
             </div>
