@@ -135,6 +135,7 @@ const toExcelDateSerial = (value?: string | null): number | null => {
 };
 
 const BIRTHDAY_HEADER = 'Data de Nascimento';
+const EXCEL_DATE_HEADERS = ['Data Ativo', 'Data Desligamento', BIRTHDAY_HEADER];
 
 export const exportMembersToExcel = async (members: IMember[], title: string = 'Membros') => {
   const data = members.map((m) => {
@@ -152,22 +153,25 @@ export const exportMembersToExcel = async (members: IMember[], title: string = '
       Regiao: member.regionCode || member.region_code || member.db_member_region_code || member.db_region_code || member.regionDescription || member.regionName || member.region || '',
       Plano: member.planCode || member.plan_code || member.db_member_plan_code || member.db_plan_code || member.planDescription || member.planName || member.plan || '',
       Situacao: member.statusName || member.status_name || member.statusDescription || member.status_description || `Status ${(member.status_id ?? member.statusId ?? '')}`,
+      'Data Ativo': toExcelDateSerial(member.dateAafcStart || member.date_aafc_start) ?? '',
+      'Data Desligamento': toExcelDateSerial(member.dateAafcEnd || member.date_aafc_end) ?? '',
       'Data de Nascimento': toExcelDateSerial(member.birthday) ?? ''
     };
   });
 
   const worksheet = XLSX.utils.json_to_sheet(data);
 
-  // Formata a coluna de aniversário como data (dd/mm/yyyy) em vez de texto
-  const birthdayCol = Object.keys(data[0] || {}).indexOf(BIRTHDAY_HEADER);
-  if (birthdayCol >= 0) {
+  EXCEL_DATE_HEADERS.forEach((header) => {
+    const dateCol = Object.keys(data[0] || {}).indexOf(header);
+    if (dateCol < 0) return;
+
     data.forEach((_, index) => {
-      const cell = worksheet[XLSX.utils.encode_cell({ r: index + 1, c: birthdayCol })];
+      const cell = worksheet[XLSX.utils.encode_cell({ r: index + 1, c: dateCol })];
       if (cell && cell.t === 'n') {
         cell.z = 'dd/mm/yyyy';
       }
     });
-  }
+  });
 
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Membros");
